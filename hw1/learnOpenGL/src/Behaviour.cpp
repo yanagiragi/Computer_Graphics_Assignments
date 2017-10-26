@@ -77,7 +77,7 @@ bool debugMode = false;
 int nowIndex = 0;
 
 Vector3 CameraCenter;
-float CameraAngle = 0.0f;
+float CameraDistance = 20.0f;
 
 // Light sorce parameter
 float LightPos[] = { 0.0f, 0.0f, 0.0f, 1.0f };			// Light position
@@ -793,7 +793,8 @@ void Display(void)
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(0.0, 0, 20, CameraCenter.x, CameraCenter.y, CameraCenter.z, 0, 1, 0);			// set the view part of modelview matrix
+	
+	gluLookAt(0.0, 0, CameraDistance, CameraCenter.x, CameraCenter.y, CameraCenter.z, 0, 1, 0);			// set the view part of modelview matrix
 	
 	glLightfv(GL_LIGHT0, GL_POSITION, LightPos);		// Set Light1 Position, this setting function should be at another place
 
@@ -923,14 +924,17 @@ void keyboard(unsigned char key, int x, int y)
 			break;
 
 		case 'i':
-			CameraCenter.y += 0.5f;
+			CameraCenter.z += 0.5f;
 			break;
 
 		case 'k':
-			CameraCenter.y -= 0.5f;
+			CameraCenter.z -= 0.5f;
 			break;
-		case 'l':
-			CameraAngle += 0.1f;
+		case 'u':
+			CameraDistance += 2.0f;
+			break;
+		case 'o':
+			CameraDistance -= 2.0f;
 			break;
 		default:
 			break;
@@ -944,17 +948,7 @@ void keyboard(unsigned char key, int x, int y)
 int success;
 char infoLog[ERROR_MESSAGE_LOG_SIZE];
 
-char* vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"uniform mat4 matrixMV;\n"
-"uniform mat4 matrixP;\n"
-"out vec4 c;"
-"void main()\n"
-"{\n"
-"   vec4 pos = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-"	gl_Position = pos;\n"
-"	c = matrixP * vec4(1.0f, 0.0f, 0.0f, 1.0f) / 255.0f;\n"
-"}\0";
+char* vertexShaderSource = "";
 
 const char* fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
@@ -979,6 +973,8 @@ void DrawObj_Alter()
 	int vertexColorLocationP = glGetUniformLocation(shaderProgram, "matrixP");
 
 	GLfloat matrixM[16];
+	GLfloat matrixP[16];
+	glGetFloatv(GL_PROJECTION_MATRIX, matrixP);
 
 	glPushMatrix();
 	//glGetFloatv(GL_MODELVIEW_MATRIX, matrixMV);
@@ -1011,9 +1007,9 @@ void DrawObj_Alter()
 	//glGetFloatv(GL_MODELVIEW_MATRIX, matrixV);
 
 	glLoadIdentity();
-	gluPerspective(60.0f, 4.0f / 3.0f, 5.0f, 100.0f);
-	GLfloat matrixP[16];
-	glGetFloatv(GL_PROJECTION_MATRIX, matrixP);
+	//gluPerspective(60.0f, 4.0f / 3.0f, 5.0f, 100.0f);
+	//GLfloat matrixP[16];
+	//glGetFloatv(GL_PROJECTION_MATRIX, matrixP);
 
 	//glMultMatrixf(matrixP);
 	//glGetFloatv(GL_MODELVIEW_MATRIX, matrixMV);
@@ -1102,19 +1098,17 @@ void ParseObj() {
 	}
 
 	//vertexShaderSource = std::ifstream
-	vertexShaderSource = (char *) malloc(sizeof(char) * 1024);
+	
+	vertexShaderSource = (char *) malloc(sizeof(char) * MAX_STRING_LENGTH);
 	vertexShaderSource[0] = '\0';
-	std::ifstream infile("../learnOpenGL/vertex.glsl");
-	std::string line;
-	char *buf = (char *)malloc(sizeof(char) * 1024);
+
+	char *buf = (char *)malloc(sizeof(char) * MAX_STRING_LENGTH);
 	FILE* fp = fopen("../learnOpenGL/vertex.glsl", "r");
-	while (fgets(buf, 1024, fp) != NULL)
+	while (fgets(buf, MAX_STRING_LENGTH, fp) != NULL)
 	{
 		strcat(vertexShaderSource, buf);
-
-		// process pair (a,b)
 	}
-	//printf("%s\n", vertexShaderSource);
+	free(buf);
 
 	CreateShader(vertexShader, GL_VERTEX_SHADER, vertexShaderSource);
 	CreateShader(fragmentShader, GL_FRAGMENT_SHADER, fragmentShaderSource);
