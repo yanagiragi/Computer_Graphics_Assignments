@@ -3,16 +3,13 @@
 *	Author: yanagiragi
 *	Course: NCTU Computer Graphics
 */
-
+#include <GL/glew.h>
 #include <GL/glut.h>
 #include <GL/glu.h>
 #include <GL/gl.h>
 
 #include <stdlib.h>
 #include <iostream>
-
-#define _USE_MATH_DEFINES
-#include <math.h>
 
 #include "Behaviour.cpp"
 
@@ -57,5 +54,7 @@ int main(int argc, char *argv[])
 	printf("FPS = %f\n", 1.0f / deltaTime * 1000.0f);
 
 	glutMainLoop();
+
+	Destroy();
 	return 0;
 }

@@ -1,11 +1,15 @@
-//#include <GL/glut.h>
-#include "GL/glut.h"
-#include <GL/glu.h>
-#include <GL/gl.h>
+//#include "main.cpp"
+
+#include <iostream>
+#include <stdarg.h>
+#include <string>
+#include <vector>
 
 //#include "Texture.cpp"
-
-#define TEXTURE_NUM 6
+#define MAX_STRING_LENGTH 1024
+#define TEXTURE_NUM 9
+#define UTAH_VERTEX_COUNT 1292
+#define UTAH_FACE_COUNT 2464
 
 #define SUN_INDEX 0
 #define MECURY_INDEX 1
@@ -13,6 +17,9 @@
 #define JUPITER_INDEX 3
 #define EURPOPA_INDEX 4
 #define MOON_INDEX 5
+#define MYSTAR_INDEX 6
+#define SAT_EARTH_INDEX 7
+#define SAT_JUNIPTER_INDEX 8
 
 #pragma region  StructDecarations
 struct Vector3 {
@@ -27,6 +34,14 @@ struct Image {
 };
 typedef struct Image Image;
 
+struct Obj {
+	Vector3 positions[UTAH_VERTEX_COUNT];
+	Vector3 faces[UTAH_FACE_COUNT];
+	// In this case:
+	// face: 2464
+	// Vertex: 1292
+};
+typedef Obj Obj;
 
 struct Planet {
 	char *TextureName;
@@ -46,6 +61,10 @@ struct Planet {
 };
 typedef struct Planet Planet;
 #pragma endregion
+
+Obj teapot;
+float vertices[UTAH_VERTEX_COUNT * 3];
+unsigned int indices[UTAH_FACE_COUNT * 3];
 
 Planet planets[TEXTURE_NUM];
 GLUquadricObj* quad = gluNewQuadric();					// glu quadratic object for drawing shape like sphere and cylinder
@@ -67,8 +86,105 @@ int ImageLoad(char *filename, Image *image);
 Image * loadTexture(char *filename);
 void Init();
 void DrawPlanet(int index);
+void DrawSatellite(int index);
+void DrawCube();
 void Display(void);
+void ParseObj();
+void DrawObj_Alter();
 void keyboard(unsigned char key, int x, int y);
+
+void DrawObj() {
+
+	glPushMatrix();
+	// Rotate Around axis
+	glRotatef(planets[MYSTAR_INDEX].RotateRespectAxisRotateAngle, 0.0f, 0.0f, 1.0f);
+	glRotatef(planets[MYSTAR_INDEX].RotateRespectAngle * (float)(frame), planets[MYSTAR_INDEX].RotateRespectAxis.x, planets[MYSTAR_INDEX].RotateRespectAxis.y, planets[MYSTAR_INDEX].RotateRespectAxis.z);
+	glTranslatef(planets[MYSTAR_INDEX].Translation, 0.0f, 0.0f);
+
+	// Rotate Self
+	glTranslatef(0.0f, 0.0f, 0.0f);
+	glRotatef(planets[MYSTAR_INDEX].RotateSelfAngle * (float)(frame), planets[MYSTAR_INDEX].RotateSelfAxis.x, planets[MYSTAR_INDEX].RotateSelfAxis.y, planets[MYSTAR_INDEX].RotateSelfAxis.z);
+
+	DrawObj_Alter();
+
+	/*
+	for (int i = 0; i < 2464; ++i) {
+		glBegin(GL_TRIANGLES);
+
+			Vector3 v1 = teapot.positions[(int)(teapot.faces[i].x) - 1];
+			Vector3 v2 = teapot.positions[(int)(teapot.faces[i].y) - 1];
+			Vector3 v3 = teapot.positions[(int)(teapot.faces[i].z) - 1];
+			
+			glVertex3f(v1.x, v1.y, v1.z);
+			glVertex3f(v2.x, v2.y, v2.z);
+			glVertex3f(v3.x, v3.y, v3.z);
+
+		glEnd();
+	}*/
+
+	glPopMatrix();
+}
+
+void loadObj(char *filename) {
+
+	int vertexCount = 0, faceCount = 0;
+	FILE *fp;
+	char *buffer = (char *)malloc(sizeof(char) * MAX_STRING_LENGTH);
+	std::size_t sz;
+
+	fp = fopen(filename, "r");
+	
+	
+	while (fgets(buffer, MAX_STRING_LENGTH, fp) != NULL) {
+		if (buffer[0] == 'v') {
+			
+			std::vector<float> vertex;
+
+			char *res = strtok(buffer, " ");
+			while (res != NULL) {
+				res = strtok(NULL, " ");
+				if (res != NULL) {
+					float f = std::stof(res, &sz);
+					//printf("%f\n", f);
+					vertex.push_back(f);
+				}
+			}
+
+			Vector3 v;
+			v.x = vertex[0];
+			v.y = vertex[1];
+			v.z = vertex[2];
+
+			teapot.positions[vertexCount] = v;
+
+			++vertexCount;
+
+		}
+		else if (buffer[0] == 'f') {
+			std::vector<float> vertex;
+
+			char *res = strtok(buffer, " ");
+			while (res != NULL) {
+				res = strtok(NULL, " ");
+				if (res != NULL) {
+					float f = std::stof(res, &sz);
+					vertex.push_back(f);
+				}
+			}
+
+			Vector3 f;
+			f.x = vertex[0];
+			f.y = vertex[1];
+			f.z = vertex[2];
+
+			teapot.faces[faceCount] = f;
+
+			++faceCount;
+		}
+	}
+
+	free(buffer);
+}
 
 void setupPlanetTexture(int index)
 {
@@ -90,7 +206,8 @@ void setupPlanetTexture(int index)
 void setupPlanets()
 {
 	Vector3 bufferVector3;
-
+	
+	#pragma region sunSetting
 	// Sun
 	planets[SUN_INDEX].TextureName = "../Resource/sun.bmp";
 	planets[SUN_INDEX].Radius = 2.0f;
@@ -107,8 +224,9 @@ void setupPlanets()
 	bufferVector3.z = 0.0f;
 	planets[SUN_INDEX].RotateSelfAxis = bufferVector3;
 	planets[SUN_INDEX].RotateRespectAxisRotateAngle = 0.0f;
-	
+	#pragma endregion	
 
+	#pragma region MecurySetting
 	// Mecury
 	planets[MECURY_INDEX].TextureName = "../Resource/mercury.bmp";
 	planets[MECURY_INDEX].Radius = 0.5f;
@@ -128,7 +246,9 @@ void setupPlanets()
 	bufferVector3.z = 0.0f;
 	planets[MECURY_INDEX].RotateSelfAxis = bufferVector3;	
 	planets[MECURY_INDEX].RotateSelfAngle = 0.5f;
+	#pragma endregion
 
+	#pragma region earthSetting
 	// Earth
 	planets[EARTH_INDEX].TextureName = "../Resource/earth.bmp";
 	planets[EARTH_INDEX].Radius = 1.0f;
@@ -149,7 +269,9 @@ void setupPlanets()
 	bufferVector3.z = 0.0f;
 	planets[EARTH_INDEX].RotateSelfAxis = bufferVector3;
 	planets[EARTH_INDEX].RotateSelfAngle = 1.0f;
+	#pragma endregion
 
+	#pragma region Juitper
 	// Jupiter
 	planets[JUPITER_INDEX].TextureName = "../Resource/jupiter.bmp";
 	planets[JUPITER_INDEX].Radius = 1.5f;
@@ -170,13 +292,119 @@ void setupPlanets()
 	bufferVector3.z = 0.0f;
 	planets[JUPITER_INDEX].RotateSelfAxis = bufferVector3;
 	planets[JUPITER_INDEX].RotateSelfAngle = 0.3f;
+	#pragma endregion
 
 	// europa
 	planets[EURPOPA_INDEX].TextureName = "../Resource/europa.bmp";
+	planets[EURPOPA_INDEX].Radius = 0.5f;
+
+	planets[EURPOPA_INDEX].Translation = 2.5f;
+	planets[EURPOPA_INDEX].TranslationMin = 1.0f;
+	planets[EURPOPA_INDEX].TranslationMax = 3.5f;
+
+	bufferVector3.x = 0.0f;
+	bufferVector3.y = 1.0f;
+	bufferVector3.z = 0.0f;
+	planets[EURPOPA_INDEX].RotateRespectAxis = bufferVector3;
+	planets[EURPOPA_INDEX].RotateRespectAngle = 1.0f;
+	planets[EURPOPA_INDEX].RotateRespectAxisRotateAngle = 30.0f;
+
+	bufferVector3.x = 0.0f;
+	bufferVector3.y = 1.0f;
+	bufferVector3.z = 0.0f;
+	planets[EURPOPA_INDEX].RotateSelfAxis = bufferVector3;
+	planets[EURPOPA_INDEX].RotateSelfAngle = 0.3f;
 
 	// moon
 	planets[MOON_INDEX].TextureName = "../Resource/moon.bmp";
+	planets[MOON_INDEX].Radius = 0.5f;
 
+	planets[MOON_INDEX].Translation = 2.0f;
+	planets[MOON_INDEX].TranslationMin = 1.0f;
+	planets[MOON_INDEX].TranslationMax = 3.0f;
+
+	bufferVector3.x = 0.0f;
+	bufferVector3.y = 1.0f;
+	bufferVector3.z = 0.0f;
+	planets[MOON_INDEX].RotateRespectAxis = bufferVector3;
+	planets[MOON_INDEX].RotateRespectAngle = 1.0f;
+	planets[MOON_INDEX].RotateRespectAxisRotateAngle = 10.0f;
+
+	bufferVector3.x = 0.0f;
+	bufferVector3.y = 1.0f;
+	bufferVector3.z = 0.0f;
+	planets[MOON_INDEX].RotateSelfAxis = bufferVector3;
+	planets[MOON_INDEX].RotateSelfAngle = 0.0f; // Always face earth
+
+	// For Debug
+	// planets[EARTH_INDEX].RotateSelfAngle = 0.0f;
+	// planets[MOON_INDEX].RotateSelfAngle = 0.0f;
+
+	// planets[JUNIPTER_INDEX].RotateSelfAngle = 0.0f;
+	// planets[EURPOPA_INDEX].RotateSelfAngle = 0.0f;
+
+	// Satelitte 1
+	planets[SAT_EARTH_INDEX].TextureName = "../Resource/sat1.bmp";
+	planets[SAT_EARTH_INDEX].Radius = 0.5f;
+
+	planets[SAT_EARTH_INDEX].Translation = 1.5f;
+	planets[SAT_EARTH_INDEX].TranslationMin = 1.5f;
+	planets[SAT_EARTH_INDEX].TranslationMax = 2.0f;
+
+	bufferVector3.x = 0.0f;
+	bufferVector3.y = 1.0f;
+	bufferVector3.z = 0.0f;
+	planets[SAT_EARTH_INDEX].RotateRespectAxis = bufferVector3;
+	planets[SAT_EARTH_INDEX].RotateRespectAngle = 0.0f;
+	planets[SAT_EARTH_INDEX].RotateRespectAxisRotateAngle = 0.0f;
+
+	bufferVector3.x = 0.0f;
+	bufferVector3.y = 1.0f;
+	bufferVector3.z = 0.0f;
+	planets[SAT_EARTH_INDEX].RotateSelfAxis = bufferVector3;
+	planets[SAT_EARTH_INDEX].RotateSelfAngle = 0.0f; // Always face earth
+
+	// Satelitte 2
+	planets[SAT_JUNIPTER_INDEX].TextureName = "../Resource/sat1.bmp"; // However we load it but unused
+	planets[SAT_JUNIPTER_INDEX].Radius = 0.5f;
+
+	planets[SAT_JUNIPTER_INDEX].Translation = 2.0f;
+	planets[SAT_JUNIPTER_INDEX].TranslationMin = 2.0f;
+	planets[SAT_JUNIPTER_INDEX].TranslationMax = 2.5f;
+
+	bufferVector3.x = 0.0f;
+	bufferVector3.y = 1.0f;
+	bufferVector3.z = 0.0f;
+	planets[SAT_JUNIPTER_INDEX].RotateRespectAxis = bufferVector3;
+	planets[SAT_JUNIPTER_INDEX].RotateRespectAngle = 1.0f;
+	planets[SAT_JUNIPTER_INDEX].RotateRespectAxisRotateAngle = 10.0f;
+
+	bufferVector3.x = 0.0f;
+	bufferVector3.y = 1.0f;
+	bufferVector3.z = 0.0f;
+	planets[SAT_JUNIPTER_INDEX].RotateSelfAxis = bufferVector3;
+	planets[SAT_JUNIPTER_INDEX].RotateSelfAngle = 0.0f; // Always face earth
+
+	// MyStar
+	planets[MYSTAR_INDEX].TextureName = "../Resource/my.bmp";
+	planets[MYSTAR_INDEX].Radius = 1.0f;
+
+	planets[MYSTAR_INDEX].Translation = 8.0f;
+	planets[MYSTAR_INDEX].TranslationMin = 4.0f;
+	planets[MYSTAR_INDEX].TranslationMax = 10.0f;
+	bufferVector3.x = 0.0f;
+	bufferVector3.y = 1.0f;
+	bufferVector3.z = 0.0f;
+
+	planets[MYSTAR_INDEX].RotateRespectAxis = bufferVector3;
+	planets[MYSTAR_INDEX].RotateRespectAngle = 1.0f;
+	planets[MYSTAR_INDEX].RotateRespectAxisRotateAngle = 70.0f;
+
+	bufferVector3.x = 0.0f;
+	bufferVector3.y = 1.0f;
+	bufferVector3.z = 0.0f;
+	planets[MYSTAR_INDEX].RotateSelfAxis = bufferVector3;
+	planets[MYSTAR_INDEX].RotateSelfAngle = 1.0f;
 
 	for (int i = 0; i < TEXTURE_NUM; ++i) {
 		setupPlanetTexture(i);
@@ -273,8 +501,11 @@ Image * loadTexture(char *filename)
 	return image;
 }
 
+
 void Init()
 {
+	GLenum err = glewInit();
+
 	//glClearColor(0.0, 0.0, 0.0, 1.0);					// set what color should be used when we clean the color buffer
 	glClearColor(0.07f, 0.447f, 0.05f, 1.0);					// set what color should be used when we clean the color buffer
 	glEnable(GL_LIGHT0);								// Enable Light1
@@ -295,16 +526,197 @@ void Init()
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);	// you can choose which part of lighting model should be modified by texture mapping
-	glEnable(GL_COLOR_MATERIAL);						// enable this parameter to use glColor() as material of lighting model
+	//glEnable(GL_COLOR_MATERIAL);						// enable this parameter to use glColor() as material of lighting model
 
 	setupPlanets();
+
+	loadObj("../Resource/teapot.obj");
+	
+	ParseObj();
+}
+
+void CreateSatelitte() {
+
+	float uniformScale = 0.1f;
+	float satelliteRadius = 1.0f;
+
+	glPushMatrix();
+
+		glTranslatef(0.0f, 0.5f, 0.0f);
+
+		glScalef(uniformScale, uniformScale, uniformScale);
+
+		// Draw Main Body
+		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+		glPushMatrix();
+		glRotatef(180.0f, 0.0f, 1.0f, 0.0f);
+
+		glPushMatrix();
+		glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
+		glTranslatef(0.0f, 0.0f, 0.5f);
+		gluDisk(quad, 0.0f, satelliteRadius, 20, 5);
+		glPopMatrix();
+
+		glTranslatef(0.0f, 0.0f, -1.0f * satelliteRadius * 4.0f + 0.5f);
+		gluCylinder(quad, satelliteRadius, satelliteRadius, satelliteRadius * 4.0f, 20, 5);
+
+		glPushMatrix();
+		glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
+		gluDisk(quad, 0.0f, satelliteRadius, 20, 5);
+		glPopMatrix();
+
+		glPopMatrix();
+
+		// Draw
+		glPushMatrix();
+			glTranslatef(-5.0f, 0.0f, 0.0f);
+			glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+			glTranslatef(5.0f, 0.0f, 0.0f);
+			glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+			glTranslatef(-5.0f, 0.0f, 0.3f);
+			glScalef(10.0f, 3.2f, 0.5f);
+			DrawCube();
+		glPopMatrix();
+
+		glTranslatef(-2.2f, 0.0f, 2.2f);
+		glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+		glRotatef(-90.0f, 0.0f, 0.0f, 1.0f);
+		glTranslatef(0.0f, 0.5f, 0.0f);
+		glutSolidCone(satelliteRadius * 2.0f, satelliteRadius * 1.2f, 20, 5);
+		gluDisk(quad, 0.0f, satelliteRadius * 2.0f, 20, 5);
+
+	glPopMatrix();
+}
+
+void DrawSatellite(int index)
+{
+	glPushMatrix();
+
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, planets[index].Texture2D);
+		gluQuadricTexture(quad, GL_TRUE);
+	
+		if (index == SAT_EARTH_INDEX) {
+		
+			glRotatef(planets[EARTH_INDEX].RotateRespectAxisRotateAngle, 0.0f, 0.0f, 1.0f);
+			glRotatef(planets[EARTH_INDEX].RotateRespectAngle * (float)(frame), planets[EARTH_INDEX].RotateRespectAxis.x, planets[EARTH_INDEX].RotateRespectAxis.y, planets[EARTH_INDEX].RotateRespectAxis.z);
+			glTranslatef(planets[EARTH_INDEX].Translation, 0.0f, 0.0f);
+
+			// Rotate Self
+			glTranslatef(0.0f, 0.0f, 0.0f);
+			glRotatef(planets[EARTH_INDEX].RotateSelfAngle * (float)(frame), planets[EARTH_INDEX].RotateSelfAxis.x, planets[EARTH_INDEX].RotateSelfAxis.y, planets[EARTH_INDEX].RotateSelfAxis.z);
+		
+		}
+		else if (index == SAT_JUNIPTER_INDEX) {
+			glRotatef(planets[JUPITER_INDEX].RotateRespectAxisRotateAngle, 0.0f, 0.0f, 1.0f);
+			glRotatef(planets[JUPITER_INDEX].RotateRespectAngle * (float)(frame), planets[JUPITER_INDEX].RotateRespectAxis.x, planets[JUPITER_INDEX].RotateRespectAxis.y, planets[JUPITER_INDEX].RotateRespectAxis.z);
+			glTranslatef(planets[JUPITER_INDEX].Translation, 0.0f, 0.0f);
+
+			// Rotate Self
+			glTranslatef(0.0f, 0.0f, 0.0f);
+			glRotatef(planets[JUPITER_INDEX].RotateSelfAngle * (float)(frame), planets[JUPITER_INDEX].RotateSelfAxis.x, planets[JUPITER_INDEX].RotateSelfAxis.y, planets[JUPITER_INDEX].RotateSelfAxis.z);
+			glDisable(GL_TEXTURE_2D); 
+		}
+
+		// Rotate Around axis
+		glRotatef(planets[index].RotateRespectAxisRotateAngle, 0.0f, 0.0f, 1.0f);
+		glRotatef(planets[index].RotateRespectAngle * (float)(frame), planets[index].RotateRespectAxis.x, planets[index].RotateRespectAxis.y, planets[index].RotateRespectAxis.z);
+		glTranslatef(planets[index].Translation, 0.0f, 0.0f);
+
+		// Rotate Self
+		glTranslatef(0.0f, 0.0f, 0.0f);
+		glRotatef(planets[index].RotateSelfAngle * (float)(frame), planets[index].RotateSelfAxis.x, planets[index].RotateSelfAxis.y, planets[index].RotateSelfAxis.z);
+
+		CreateSatelitte();
+
+		if (index == SAT_JUNIPTER_INDEX) 
+		{
+			glEnable(GL_TEXTURE_2D); // Restore what's we've done
+		}
+
+	glPopMatrix();
+
+	glDisable(GL_LIGHTING);
+
+}
+
+void DrawCube()
+{
+	glBegin(GL_QUADS);
+	
+	// front
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex3f(0.0f, 0.0f, 0.0f);
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex3f(1.0f, 0.0f, 0.0f);
+	glTexCoord2f(1.0f, -1.0f);
+	glVertex3f(1.0f, 1.0f, 0.0f);
+	glTexCoord2f(0.0f, -1.0f);
+	glVertex3f(0.0f, 1.0f, 0.0f);
+	// back
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex3f(0.0f, 0.0f, -1.0f);
+	
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex3f(1.0f, 0.0f, -1.0f);
+
+	glTexCoord2f(1.0f, -1.0f);
+	glVertex3f(1.0f, 1.0f, -1.0f);
+
+	glTexCoord2f(0.0f, -1.0f);
+	glVertex3f(0.0f, 1.0f, -1.0f);
+	// right
+	glVertex3f(1.0f, 0.0f, 0.0f);
+	glVertex3f(1.0f, 0.0f, -1.0f);
+	glVertex3f(1.0f, 1.0f, -1.0f);
+	glVertex3f(1.0f, 1.0f, 0.0f);
+	// left
+	glVertex3f(0.0f, 0.0f, 0.0f);
+	glVertex3f(0.0f, 0.0f, -1.0f);
+	glVertex3f(0.0f, 1.0f, -1.0f);
+	glVertex3f(0.0f, 1.0f, 0.0f);
+	// top
+	glVertex3f(0.0f, 1.0f, 0.0f);
+	glVertex3f(1.0f, 1.0f, 0.0f);
+	glVertex3f(1.0f, 1.0f, -1.0f);
+	glVertex3f(0.0f, 1.0f, -1.0f);
+	// bottom
+	glVertex3f(0.0f, 0.0f, 0.0f);
+	glVertex3f(1.0f, 0.0f, 0.0f);
+	glVertex3f(1.0f, 0.0f, -1.0f);
+	glVertex3f(0.0f, 0.0f, -1.0f);
+	glEnd();
 }
 
 void DrawPlanet(int index)
 {
 	glPushMatrix();
+
+		if (index == 0) {
+			glDisable(GL_LIGHTING);
+		}
+
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, planets[index].Texture2D);
+
+		if (index == EURPOPA_INDEX) { // Europia
+			glRotatef(planets[JUPITER_INDEX].RotateRespectAxisRotateAngle, 0.0f, 0.0f, 1.0f);
+			glRotatef(planets[JUPITER_INDEX].RotateRespectAngle * (float)(frame), planets[JUPITER_INDEX].RotateRespectAxis.x, planets[JUPITER_INDEX].RotateRespectAxis.y, planets[JUPITER_INDEX].RotateRespectAxis.z);
+			glTranslatef(planets[JUPITER_INDEX].Translation, 0.0f, 0.0f);
+
+			// Rotate Self
+			glTranslatef(0.0f, 0.0f, 0.0f);
+			glRotatef(planets[JUPITER_INDEX].RotateSelfAngle * (float)(frame), planets[JUPITER_INDEX].RotateSelfAxis.x, planets[JUPITER_INDEX].RotateSelfAxis.y, planets[JUPITER_INDEX].RotateSelfAxis.z);
+		}
+		else if (index == MOON_INDEX) { // Moon
+			glRotatef(planets[EARTH_INDEX].RotateRespectAxisRotateAngle, 0.0f, 0.0f, 1.0f);
+			glRotatef(planets[EARTH_INDEX].RotateRespectAngle * (float)(frame), planets[EARTH_INDEX].RotateRespectAxis.x, planets[EARTH_INDEX].RotateRespectAxis.y, planets[EARTH_INDEX].RotateRespectAxis.z);
+			glTranslatef(planets[EARTH_INDEX].Translation, 0.0f, 0.0f);
+
+			// Rotate Self
+			glTranslatef(0.0f, 0.0f, 0.0f);
+			glRotatef(planets[EARTH_INDEX].RotateSelfAngle * (float)(frame), planets[EARTH_INDEX].RotateSelfAxis.x, planets[EARTH_INDEX].RotateSelfAxis.y, planets[EARTH_INDEX].RotateSelfAxis.z);
+		}
 
 		// Rotate Around axis
 		glRotatef(planets[index].RotateRespectAxisRotateAngle, 0.0f, 0.0f, 1.0f);
@@ -316,10 +728,19 @@ void DrawPlanet(int index)
 		glRotatef(planets[index].RotateSelfAngle * (float)(frame), planets[index].RotateSelfAxis.x, planets[index].RotateSelfAxis.y, planets[index].RotateSelfAxis.z);
 
 		gluQuadricTexture(quad, GL_TRUE);
+		
+		if (index == EARTH_INDEX) {
+			glScalef(1.2f, 1.0f, 1.0f);
+		}
+		else {
+			glScalef(1.0f, 1.0f, 1.0f);
+		}
+
 		gluSphere(quad, planets[index].Radius, 30, 30);
 
 		if (debugMode) {
 			// Debug Line Draw
+			glDisable(GL_LIGHTING);
 			glPushMatrix();
 
 			float baseRad = 0.03f, baseHeight = 5.0f;
@@ -342,9 +763,14 @@ void DrawPlanet(int index)
 			glColor3f(1.0f, 1.0f, 1.0f);
 			glEnable(GL_TEXTURE_2D);
 			glPopMatrix();
+			glEnable(GL_LIGHTING);
 		}
 
 		glDisable(GL_TEXTURE_2D);
+		
+		if (index == 0) {
+			glEnable(GL_LIGHTING);
+		}
 	glPopMatrix();
 }
 
@@ -354,8 +780,7 @@ void Display(void)
 	if (!frameStop) {
 		++frame;
 		printf("[Info] Frame = %d\r", frame);
-	}
-	
+	}	
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -363,34 +788,25 @@ void Display(void)
 	glLoadIdentity();
 	gluLookAt(0.0, 0, 20, 0, 0, 0, 0, 1, 0);			// set the view part of modelview matrix
 	
-	glDisable(GL_TEXTURE_2D);
-
 	glLightfv(GL_LIGHT0, GL_POSITION, LightPos);		// Set Light1 Position, this setting function should be at another place
-	glLightfv(GL_LIGHT0, GL_AMBIENT, LightAmb);			// Set Light1 Ambience
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, LightDif);			// Set Light1 Diffuse
-	glLightfv(GL_LIGHT0, GL_SPECULAR, LightSpc);		// Set Light1 Specular
-	//glEnable(GL_TEXTURE_2D);
 
+	DrawObj();
+	
 	glPushMatrix();
-		for (int i = 0; i < 4; ++i) {
+		for (int i = 0; i < TEXTURE_NUM - 2; ++i) {
+			
+			if (i == MYSTAR_INDEX) { // skip this
+				continue;
+			}
+
 			DrawPlanet(i);
 		}
+		DrawSatellite(SAT_EARTH_INDEX);
+		DrawSatellite(SAT_JUNIPTER_INDEX);		
 	glPopMatrix();
+	
 
-
-	glPushMatrix();
-	glTranslatef(-5.0, -5.0, 0.0);
-	glColor3f(1.0, 0.0, 1.0);
-	//glutSolidCone(2, 5, 20, 20);
-	glPopMatrix();
-
-	glPushMatrix();
-	glTranslatef(7.0, 0.0, -5.0);
-	glColor3f(1.0, 1.0, 0.0);
-	//gluCylinder(quad, 1, 1, 3, 20, 20);
-	glPopMatrix();
 	glDisable(GL_TEXTURE_2D);							// when you draw something without texture, be sure to disable GL_TEXTURE_2D
-
 
 	glutSwapBuffers();									// swap the drawn buffer to the window
 }
@@ -405,7 +821,6 @@ void keyboard(unsigned char key, int x, int y)
 			}
 			else {
 				planets[nowIndex].RotateRespectAxisRotateAngle += 1.0f;
-				//planets[MECURY_INDEX].RotateRespectAxisRotateAngle -= 0.1f;
 			}
 			break;
 
@@ -465,7 +880,7 @@ void keyboard(unsigned char key, int x, int y)
 
 		case 'p':
 			if (!frameStop)
-				printf("\n"); // eat /r
+				printf("\n"); // eat '/r'
 			printf("[Info] ID = %d, Frame Mode = %s\n", nowIndex, frameStop ? "Count" : "Stop");
 			frameStop = !frameStop;
 			break;
@@ -489,12 +904,166 @@ void keyboard(unsigned char key, int x, int y)
 			printf("[Info] ID = %d changed to Index %d\n", nowIndex, 3);
 			nowIndex = 3;
 			break;
+		
+		case '5':
+			printf("[Info] ID = %d changed to Index %d\n", nowIndex, 4);
+			nowIndex = 4;
+			break;
 
-
+		case '6':
+			printf("[Info] ID = %d changed to Index %d\n", nowIndex, 5);
+			nowIndex = 5;
+			break;
+		
 		default:
 			break;
 	}
-	glutPostRedisplay(); /* this redraws the scene without
-						 waiting for the display callback so that any changes appear
-						 instantly */
+
+	glutPostRedisplay(); // this redraws the scene without waiting for the display callback so that any changes appear instantly 
+}
+
+#define ERROR_MESSAGE_LOG_SIZE 512
+
+int success;
+char infoLog[ERROR_MESSAGE_LOG_SIZE];
+
+const char* vertexShaderSource = "#version 330 core\n"
+"layout (location = 0) in vec3 aPos;\n"
+"uniform vec4 matrix;\n"
+"void main()\n"
+"{\n"
+"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+"}\0";
+
+const char* fragmentShaderSource = "#version 330 core\n"
+"out vec4 FragColor;\n"
+"uniform vec4 ourColor;\n"
+"void main()\n"
+"{\n"
+"   FragColor = ourColor;\n"
+"}\n\0";
+
+unsigned int VAO, VBO, EBO;
+unsigned int vertexShader;
+unsigned int fragmentShader;
+unsigned int shaderProgram;
+
+bool CreateShader(unsigned int &shaderInstance, unsigned int shaderType, const GLchar* shaderSource) {
+
+	shaderInstance = glCreateShader(shaderType);
+
+	// 1 stands for one string in vertexShaderSource
+	glShaderSource(shaderInstance, 1, &shaderSource, NULL);
+	glCompileShader(shaderInstance);
+
+	glGetShaderiv(shaderInstance, GL_COMPILE_STATUS, &success);
+
+	if (!success) {
+		glGetShaderInfoLog(shaderInstance, ERROR_MESSAGE_LOG_SIZE, NULL, infoLog);
+		// std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+	}
+
+	return success;
+}
+
+bool CreateProgram(unsigned int &shaderProgramInstance, int n_args, ...)
+{
+	shaderProgramInstance = glCreateProgram();
+
+	va_list ap;
+	va_start(ap, n_args);
+	for (int i = 0; i < n_args; i++) {
+		int shaderID = va_arg(ap, unsigned int);
+		glAttachShader(shaderProgramInstance, shaderID);
+	}
+	va_end(ap);
+
+	glLinkProgram(shaderProgramInstance);
+
+	glGetProgramiv(shaderProgramInstance, GL_LINK_STATUS, &success);
+	if (!success) {
+		glGetProgramInfoLog(shaderProgramInstance, ERROR_MESSAGE_LOG_SIZE, NULL, infoLog);
+		std::cout << "ERROR::SHADER::LINK_FAILED\n" << infoLog << std::endl;
+	}
+	else {
+		va_start(ap, n_args);
+		for (int i = 0; i < n_args; i++) {
+			int shaderID = va_arg(ap, unsigned int);
+			glDeleteShader(shaderID);
+		}
+		va_end(ap);
+	}
+
+	return success;
+}
+
+void DrawObj_Alter()
+{
+	float time = frame;
+	float greenValue = (sin(time) / 2.0f) + 0.5f;
+	int vertexColorLocation = glGetUniformLocation(shaderProgram, "matrix");
+
+	GLfloat mat;
+	glGetFloatv(GL_MATRIX_MODE, &mat);
+
+	glUseProgram(shaderProgram);
+	//glUniform4fv(vertexColorLocation, mat);
+
+	glBindVertexArray(VAO);
+	//glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
+
+	glutSwapBuffers();
+
+	//glDeleteProgram(shaderProgram);
+	
+}
+
+void Destroy() {
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &EBO);
+}
+
+void ParseObj() {
+
+	for (int i = 0; i < UTAH_VERTEX_COUNT; ++i) {
+		vertices[i * 3 + 0] = teapot.positions[i].x;
+		vertices[i * 3 + 1] = teapot.positions[i].y;
+		vertices[i * 3 + 2] = teapot.positions[i].z;
+	}
+
+	for (int i = 0; i < UTAH_FACE_COUNT; ++i) {
+		indices[i * 3 + 0] = teapot.faces[i].x - 1;
+		indices[i * 3 + 1] = teapot.faces[i].y - 1;
+		indices[i * 3 + 2] = teapot.faces[i].z - 1;
+	}
+
+	CreateShader(vertexShader, GL_VERTEX_SHADER, vertexShaderSource);
+	CreateShader(fragmentShader, GL_FRAGMENT_SHADER, fragmentShaderSource);
+
+	CreateProgram(shaderProgram, 2, vertexShader, fragmentShader);
+
+	// VAO = vertex attribute object, 1 stands for one buffer
+	glGenVertexArrays(1, &VAO);
+	// VBO = vertex buffer object
+	glGenBuffers(1, &VBO);
+	// EBO = element buffer object
+	glGenBuffers(1, &EBO);
+
+	glBindVertexArray(VAO);
+	// vertex buffer type: GL_ARRAY_BUFFER
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+
+	// copy vertex data into buffer's memory
+	// GL_STATIC_DRAW: the data will most likely not change at all or very rarely.
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+	// 0 is the index of vertex attribute
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
 }
