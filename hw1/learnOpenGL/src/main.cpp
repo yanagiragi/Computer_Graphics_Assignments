@@ -51,6 +51,7 @@ int main(int argc, char *argv[])
 	glutDisplayFunc(Display);									// callback funtion for drawing a frame
 	glutReshapeFunc(WindowSize);								// callback function when the window size is changed
 	glutTimerFunc(deltaTime, Tick, 0);							// timer function
+	glutKeyboardFunc(keyboard);
 									  
 	Init();														// self-defined initialization function for the elegance of your code
 	printf("FPS = %f\n", 1.0f / deltaTime * 1000.0f);
