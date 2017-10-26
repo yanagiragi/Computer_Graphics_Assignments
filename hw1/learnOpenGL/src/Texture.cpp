@@ -1,3 +1,7 @@
+#ifndef TEXTURE_CPP
+#define TEXTURE_CPP
+
+
 #include "GL/glut.h"
 #include <GL/glu.h>
 #include <GL/gl.h>
@@ -14,6 +18,7 @@ typedef struct Image Image;
 
 //number of textures desired, you may want to change it to get bonus point
 #define TEXTURE_NUM 6
+
 //directories of image files
 char* texture_name[TEXTURE_NUM] = {
 	"../Resource/sun.bmp",
@@ -26,12 +31,6 @@ char* texture_name[TEXTURE_NUM] = {
 };
 //texture id array
 GLuint texture[TEXTURE_NUM];
-
-
-//time parameter for helping coordinate your animation, you may utilize it to help perform animation
-#define deltaTime 100
-double time = 0.0;
-
 
 //24-bit bmp loading function, no need to modify it
 int ImageLoad(char *filename, Image *image) {
@@ -102,6 +101,7 @@ int ImageLoad(char *filename, Image *image) {
 	// we're done.
 	return 1;
 }
+
 //memory allocation and file reading for an Image datatype, no need to modify it
 Image * loadTexture(char *filename) {
 	Image *image;
@@ -118,3 +118,5 @@ Image * loadTexture(char *filename) {
 	}
 	return image;
 }
+
+#endif // !TEXTURE_CPP

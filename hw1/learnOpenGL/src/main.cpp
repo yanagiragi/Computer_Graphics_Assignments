@@ -17,7 +17,7 @@
 #include "Behaviour.cpp"
 
 // time parameter for helping coordinate your animation, you may utilize it to help perform animation
-#define deltaTime 100
+#define deltaTime 10
 double time = 0.0;
 
 // callback funtion as a timer, no need to modify it
@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
 	glutTimerFunc(deltaTime, Tick, 0);							// timer function
 									  
 	Init();														// self-defined initialization function for the elegance of your code
+	printf("FPS = %f\n", 1.0f / deltaTime * 1000.0f);
 
 	glutMainLoop();
 	return 0;
