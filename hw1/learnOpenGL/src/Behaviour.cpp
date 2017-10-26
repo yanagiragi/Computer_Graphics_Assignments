@@ -400,60 +400,60 @@ void keyboard(unsigned char key, int x, int y)
 	switch (key) {
 		case 'a':
 			printf("[Info] ID = %d, RotateRespectAxisRotateAngle = %f\n", nowIndex, planets[nowIndex].RotateRespectAxisRotateAngle);
-			if (planets[MECURY_INDEX].RotateRespectAxisRotateAngle >= 45.0f) {
+			if (planets[nowIndex].RotateRespectAxisRotateAngle >= 45.0f) {
 				return;
 			}
 			else {
-				planets[MECURY_INDEX].RotateRespectAxisRotateAngle += 1.0f;
+				planets[nowIndex].RotateRespectAxisRotateAngle += 1.0f;
 				//planets[MECURY_INDEX].RotateRespectAxisRotateAngle -= 0.1f;
 			}
 			break;
 
 		case 'd':		
 			printf("[Info] ID = %d, RotateRespectAxisRotateAngle = %f\n", nowIndex, planets[nowIndex].RotateRespectAxisRotateAngle);
-			if (planets[MECURY_INDEX].RotateRespectAxisRotateAngle <= -45.0f) {
+			if (planets[nowIndex].RotateRespectAxisRotateAngle <= -45.0f) {
 				return;
 			}
 			else {
-				planets[MECURY_INDEX].RotateRespectAxisRotateAngle -= 1.0f;
+				planets[nowIndex].RotateRespectAxisRotateAngle -= 1.0f;
 			}
 			break;
 
 		case 'w':
 			printf("[Info] ID = %d, Translation = %f\n", nowIndex, planets[nowIndex].Translation);
-			if (planets[MECURY_INDEX].Translation >= planets[MECURY_INDEX].TranslationMax) {
+			if (planets[nowIndex].Translation >= planets[nowIndex].TranslationMax) {
 				return;
 			}
 			else {
-				planets[MECURY_INDEX].Translation += 0.5f;
+				planets[nowIndex].Translation += 0.5f;
 			}
 			break;
 
 		case 's':
 			printf("[Info] ID = %d, Translation = %f\n", nowIndex, planets[nowIndex].Translation);
-			if (planets[MECURY_INDEX].Translation <= planets[MECURY_INDEX].TranslationMin) {
+			if (planets[nowIndex].Translation <= planets[nowIndex].TranslationMin) {
 				return;
 			}
 			else {
-				planets[MECURY_INDEX].Translation -= 0.5f;
+				planets[nowIndex].Translation -= 0.5f;
 			}
 			break;
 		
 		case 'q':
 			printf("[Info] ID = %d, Translation = %f\n", nowIndex, planets[nowIndex].RotateRespectAngle);
 
-			planets[MECURY_INDEX].RotateRespectAngle += 0.1f;
+			planets[nowIndex].RotateRespectAngle += 0.1f;
 			break;
 		
 		case 'e':
 			printf("[Info] ID = %d, Translation = %f\n", nowIndex, planets[nowIndex].RotateRespectAngle);
 			
-			if (planets[MECURY_INDEX].RotateRespectAngle > 0.0f) {
-				planets[MECURY_INDEX].RotateRespectAngle -= 0.1f;
+			if (planets[nowIndex].RotateRespectAngle > 0.0f) {
+				planets[nowIndex].RotateRespectAngle -= 0.1f;
 			}
 			else
 			{
-				planets[MECURY_INDEX].RotateRespectAngle = 0.0f;
+				planets[nowIndex].RotateRespectAngle = 0.0f;
 			}
 
 			break;
@@ -469,6 +469,27 @@ void keyboard(unsigned char key, int x, int y)
 			printf("[Info] ID = %d, Frame Mode = %s\n", nowIndex, frameStop ? "Count" : "Stop");
 			frameStop = !frameStop;
 			break;
+		
+		case '1':
+			printf("[Info] ID = %d changed to Index %d\n", nowIndex, 0);
+			nowIndex = 0;
+			break;
+
+		case '2':
+			printf("[Info] ID = %d changed to Index %d\n", nowIndex, 1);
+			nowIndex = 1;
+			break;
+
+		case '3':
+			printf("[Info] ID = %d changed to Index %d\n", nowIndex, 2);
+			nowIndex = 2;
+			break;
+
+		case '4':
+			printf("[Info] ID = %d changed to Index %d\n", nowIndex, 3);
+			nowIndex = 3;
+			break;
+
 
 		default:
 			break;
