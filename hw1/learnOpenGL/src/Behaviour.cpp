@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 
+#include <fstream>
+#include <sstream>
+
 //#include "Texture.cpp"
 #define MAX_STRING_LENGTH 1024
 #define TEXTURE_NUM 9
@@ -72,6 +75,9 @@ unsigned int frame = 0;
 bool frameStop = false;
 bool debugMode = false;
 int nowIndex = 0;
+
+Vector3 CameraCenter;
+float CameraAngle = 0.0f;
 
 // Light sorce parameter
 float LightPos[] = { 0.0f, 0.0f, 0.0f, 1.0f };			// Light position
@@ -501,7 +507,6 @@ Image * loadTexture(char *filename)
 	return image;
 }
 
-
 void Init()
 {
 	GLenum err = glewInit();
@@ -525,7 +530,9 @@ void Init()
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
+
 	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);	// you can choose which part of lighting model should be modified by texture mapping
+
 	//glEnable(GL_COLOR_MATERIAL);						// enable this parameter to use glColor() as material of lighting model
 
 	setupPlanets();
@@ -786,7 +793,7 @@ void Display(void)
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(0.0, 0, 20, 0, 0, 0, 0, 1, 0);			// set the view part of modelview matrix
+	gluLookAt(0.0, 0, 20, CameraCenter.x, CameraCenter.y, CameraCenter.z, 0, 1, 0);			// set the view part of modelview matrix
 	
 	glLightfv(GL_LIGHT0, GL_POSITION, LightPos);		// Set Light1 Position, this setting function should be at another place
 
@@ -914,7 +921,17 @@ void keyboard(unsigned char key, int x, int y)
 			printf("[Info] ID = %d changed to Index %d\n", nowIndex, 5);
 			nowIndex = 5;
 			break;
-		
+
+		case 'i':
+			CameraCenter.y += 0.5f;
+			break;
+
+		case 'k':
+			CameraCenter.y -= 0.5f;
+			break;
+		case 'l':
+			CameraAngle += 0.1f;
+			break;
 		default:
 			break;
 	}
@@ -927,26 +944,92 @@ void keyboard(unsigned char key, int x, int y)
 int success;
 char infoLog[ERROR_MESSAGE_LOG_SIZE];
 
-const char* vertexShaderSource = "#version 330 core\n"
+char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
-"uniform vec4 matrix;\n"
+"uniform mat4 matrixMV;\n"
+"uniform mat4 matrixP;\n"
+"out vec4 c;"
 "void main()\n"
 "{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+"   vec4 pos = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+"	gl_Position = pos;\n"
+"	c = matrixP * vec4(1.0f, 0.0f, 0.0f, 1.0f) / 255.0f;\n"
 "}\0";
 
 const char* fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
-"uniform vec4 ourColor;\n"
+"in vec4 c;\n"
 "void main()\n"
 "{\n"
-"   FragColor = ourColor;\n"
+"   FragColor = c;//vec4(1.0f, 0.0f, 0.0f, 1.0f);\n"
 "}\n\0";
 
 unsigned int VAO, VBO, EBO;
 unsigned int vertexShader;
 unsigned int fragmentShader;
 unsigned int shaderProgram;
+
+
+void DrawObj_Alter()
+{
+	float time = frame;
+	float greenValue = (sin(time) / 2.0f) + 0.5f;
+	int vertexColorLocationM = glGetUniformLocation(shaderProgram, "matrixM");
+	int vertexColorLocationV = glGetUniformLocation(shaderProgram, "matrixV");
+	int vertexColorLocationP = glGetUniformLocation(shaderProgram, "matrixP");
+
+	GLfloat matrixM[16];
+
+	glPushMatrix();
+	//glGetFloatv(GL_MODELVIEW_MATRIX, matrixMV);
+	
+	//glTranslatef(2.7357f, -7.51639f, 20.13f);
+	//glGetFloatv(GL_MODELVIEW_MATRIX, matrixMV);
+
+	glLoadIdentity();
+	//gluLookAt(0.0, 0, 20, 0, 0, 0, 0, 1, 0);			// set the view part of modelview matrix
+
+	
+	//glRotatef(planets[MYSTAR_INDEX].RotateRespectAxisRotateAngle, 0.0f, 0.0f, 1.0f);
+	//glRotatef(planets[MYSTAR_INDEX].RotateRespectAngle * (float)(frame), planets[MYSTAR_INDEX].RotateRespectAxis.x, planets[MYSTAR_INDEX].RotateRespectAxis.y, planets[MYSTAR_INDEX].RotateRespectAxis.z);
+	//glTranslatef(planets[MYSTAR_INDEX].Translation, 0.0f, 0.0f);
+	//glTranslatef(0.3f, 0.0f, 0.0f);
+	//glTranslatef(0.0f, 0.0f, 0.4f);
+
+	glScalef(0.5f, 0.5f, 0.5f);
+	//glRotatef(1.0f * frame, 0.0f, 1.0f, 0.0f);
+
+	glGetFloatv(GL_MODELVIEW_MATRIX, matrixM);
+
+	//glTranslatef(0.0f, 0.0f, 0.0f);
+
+	//gluSphere(quad, 2.0f, 20, 5);
+
+	//glLoadIdentity();
+	gluLookAt(0.0, 0, 20, 0, 0, 0, 0, 1, 0);			// set the view part of modelview matrix
+	GLfloat matrixV[16];
+	//glGetFloatv(GL_MODELVIEW_MATRIX, matrixV);
+
+	glLoadIdentity();
+	gluPerspective(60.0f, 4.0f / 3.0f, 5.0f, 100.0f);
+	GLfloat matrixP[16];
+	glGetFloatv(GL_PROJECTION_MATRIX, matrixP);
+
+	//glMultMatrixf(matrixP);
+	//glGetFloatv(GL_MODELVIEW_MATRIX, matrixMV);
+
+	glUseProgram(shaderProgram);
+	//glUniform4fv(vertexColorLocation, 0, matrix);
+	glUniformMatrix4fv(vertexColorLocationM, 1, GL_FALSE, matrixM);
+	glUniformMatrix4fv(vertexColorLocationV, 1, GL_FALSE, matrixV);
+	glUniformMatrix4fv(vertexColorLocationP, 1, GL_FALSE, matrixP);
+
+	glBindVertexArray(VAO);
+	glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
+
+	glPopMatrix();
+	glUseProgram(0);
+}
 
 bool CreateShader(unsigned int &shaderInstance, unsigned int shaderType, const GLchar* shaderSource) {
 
@@ -960,7 +1043,7 @@ bool CreateShader(unsigned int &shaderInstance, unsigned int shaderType, const G
 
 	if (!success) {
 		glGetShaderInfoLog(shaderInstance, ERROR_MESSAGE_LOG_SIZE, NULL, infoLog);
-		// std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
 	}
 
 	return success;
@@ -997,26 +1080,6 @@ bool CreateProgram(unsigned int &shaderProgramInstance, int n_args, ...)
 	return success;
 }
 
-void DrawObj_Alter()
-{
-	float time = frame;
-	float greenValue = (sin(time) / 2.0f) + 0.5f;
-	int vertexColorLocation = glGetUniformLocation(shaderProgram, "matrix");
-
-	GLfloat mat;
-	glGetFloatv(GL_MATRIX_MODE, &mat);
-
-	glUseProgram(shaderProgram);
-	//glUniform4fv(vertexColorLocation, mat);
-
-	glBindVertexArray(VAO);
-	//glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
-
-	glutSwapBuffers();
-
-	//glDeleteProgram(shaderProgram);
-	
-}
 
 void Destroy() {
 	glDeleteVertexArrays(1, &VAO);
@@ -1037,6 +1100,21 @@ void ParseObj() {
 		indices[i * 3 + 1] = teapot.faces[i].y - 1;
 		indices[i * 3 + 2] = teapot.faces[i].z - 1;
 	}
+
+	//vertexShaderSource = std::ifstream
+	vertexShaderSource = (char *) malloc(sizeof(char) * 1024);
+	vertexShaderSource[0] = '\0';
+	std::ifstream infile("../learnOpenGL/vertex.glsl");
+	std::string line;
+	char *buf = (char *)malloc(sizeof(char) * 1024);
+	FILE* fp = fopen("../learnOpenGL/vertex.glsl", "r");
+	while (fgets(buf, 1024, fp) != NULL)
+	{
+		strcat(vertexShaderSource, buf);
+
+		// process pair (a,b)
+	}
+	//printf("%s\n", vertexShaderSource);
 
 	CreateShader(vertexShader, GL_VERTEX_SHADER, vertexShaderSource);
 	CreateShader(fragmentShader, GL_FRAGMENT_SHADER, fragmentShaderSource);
