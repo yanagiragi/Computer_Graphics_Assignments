@@ -144,24 +144,31 @@ void DrawObj() {
 		DrawObj_Alter();
 	}
 	else {
+		//glDisable(GL_LIGHTING);
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, planets[MYSTAR_INDEX].Texture2D);
+		glEnable(GL_LIGHTING);
+		glCullFace(GL_BACK);
+		glEnable(GL_CULL_FACE);
+		
+
 		for (int i = 0; i < 2464; ++i) {
 			glBegin(GL_TRIANGLES);
-
 			Vector3 v1 = teapot.positions[(int)(teapot.faces[i].x) - 1];
 			Vector3 v2 = teapot.positions[(int)(teapot.faces[i].y) - 1];
 			Vector3 v3 = teapot.positions[(int)(teapot.faces[i].z) - 1];
+			glm::vec3 normal = glm::normalize(glm::cross(glm::vec3(v2.x, v2.y, v2.z) - glm::vec3(v1.x, v1.y, v1.z), glm::vec3(v3.x, v3.y, v3.z) - glm::vec3(v1.x, v1.y, v1.z)));
+			glNormal3f(normal.x, normal.y, normal.z);
 			glTexCoord2f(v1.x, v1.y);
 			glVertex3f(v1.x, v1.y, v1.z);
 			glTexCoord2f(v2.x, v2.y);
 			glVertex3f(v2.x, v2.y, v2.z);
 			glTexCoord2f(v3.x, v3.y);
 			glVertex3f(v3.x, v3.y, v3.z);
-
 			glEnd();
 		}
-		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_CULL_FACE);
+		//glDisable(GL_TEXTURE_2D);
 	}
 	
 	glPopMatrix();
@@ -406,6 +413,12 @@ void setupPlanets()
 	planets[SAT_EARTH_INDEX].RotateSelfAxis = bufferVector3;
 	planets[SAT_EARTH_INDEX].RotateSelfAngle = 0.0f; // Always face earth
 
+
+	// For Debug
+	//planets[SAT_EARTH_INDEX].Translation = 0.0f;
+	//planets[SAT_EARTH_INDEX].Translation = 0.0f;
+
+
 	// Satelitte 2
 	planets[SAT_JUNIPTER_INDEX].TextureName = "../Resource/sat1.bmp"; // However we load it but unused
 	planets[SAT_JUNIPTER_INDEX].Radius = 0.5f;
@@ -597,6 +610,7 @@ void CreateSatelitte() {
 		glPushMatrix();
 		glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
 		glTranslatef(0.0f, 0.0f, 0.5f);
+		glRotatef(180.0f, 0.0f, 1.0f, 0.0f);
 		gluDisk(quad, 0.0f, satelliteRadius, 20, 5);
 		glPopMatrix();
 
@@ -605,6 +619,7 @@ void CreateSatelitte() {
 
 		glPushMatrix();
 		glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
+		glRotatef(180.0f, 0.0f, 1.0f, 0.0f);
 		gluDisk(quad, 0.0f, satelliteRadius, 20, 5);
 		glPopMatrix();
 
@@ -626,6 +641,7 @@ void CreateSatelitte() {
 		glRotatef(-90.0f, 0.0f, 0.0f, 1.0f);
 		glTranslatef(0.0f, 0.5f, 0.0f);
 		glutSolidCone(satelliteRadius * 2.0f, satelliteRadius * 1.2f, 20, 5);
+		glRotatef(180.0f, 0.0f, 1.0f, 0.0f);
 		gluDisk(quad, 0.0f, satelliteRadius * 2.0f, 20, 5);
 
 	glPopMatrix();
@@ -670,6 +686,10 @@ void DrawSatellite(int index)
 		glTranslatef(0.0f, 0.0f, 0.0f);
 		glRotatef(planets[index].RotateSelfAngle * (float)(frame), planets[index].RotateSelfAxis.x, planets[index].RotateSelfAxis.y, planets[index].RotateSelfAxis.z);
 
+		// For Debug
+		// glScalef(5, 5, 5);
+		// glRotatef(45.0f, 1.0f, 0.0f, 0.0f);
+
 		CreateSatelitte();
 
 		if (index == SAT_JUNIPTER_INDEX) 
@@ -678,57 +698,127 @@ void DrawSatellite(int index)
 		}
 
 	glPopMatrix();
+}
 
-	glDisable(GL_LIGHTING);
+glm::vec3 calculateNormal(float a, float b, float c, float d, float e, float f, float g, float h, float i)
+{
+	glm::vec3 edge1 = glm::vec3(a, b, c);
+	glm::vec3 edge2 = glm::vec3(d, e, f);
+	glm::vec3 edge3 = glm::vec3(g, h, i);
 
+	glm::vec3 normal = glm::cross(edge2 - edge1, edge3 - edge1);
+	
+	return glm::normalize(normal);
 }
 
 void DrawCube()
 {
-	glBegin(GL_QUADS);
+	glm::vec3 normal;// = calculateNormal(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
 	
+	glEnable(GL_CULL_FACE);
+
 	// front
-	glTexCoord2f(0.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, 0.0f);
-	glTexCoord2f(1.0f, 0.0f);
-	glVertex3f(1.0f, 0.0f, 0.0f);
-	glTexCoord2f(1.0f, -1.0f);
-	glVertex3f(1.0f, 1.0f, 0.0f);
-	glTexCoord2f(0.0f, -1.0f);
-	glVertex3f(0.0f, 1.0f, 0.0f);
-	// back
-	glTexCoord2f(0.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, -1.0f);
-	
-	glTexCoord2f(1.0f, 0.0f);
-	glVertex3f(1.0f, 0.0f, -1.0f);
+	glBegin(GL_TRIANGLES);
 
-	glTexCoord2f(1.0f, -1.0f);
-	glVertex3f(1.0f, 1.0f, -1.0f);
+		normal = calculateNormal(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
+		glNormal3f(normal.x, normal.y, normal.z);
+		
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(0.0f, 0.0f, 0.0f);
 
-	glTexCoord2f(0.0f, -1.0f);
-	glVertex3f(0.0f, 1.0f, -1.0f);
-	// right
-	glVertex3f(1.0f, 0.0f, 0.0f);
-	glVertex3f(1.0f, 0.0f, -1.0f);
-	glVertex3f(1.0f, 1.0f, -1.0f);
-	glVertex3f(1.0f, 1.0f, 0.0f);
-	// left
-	glVertex3f(0.0f, 0.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, -1.0f);
-	glVertex3f(0.0f, 1.0f, -1.0f);
-	glVertex3f(0.0f, 1.0f, 0.0f);
-	// top
-	glVertex3f(0.0f, 1.0f, 0.0f);
-	glVertex3f(1.0f, 1.0f, 0.0f);
-	glVertex3f(1.0f, 1.0f, -1.0f);
-	glVertex3f(0.0f, 1.0f, -1.0f);
-	// bottom
-	glVertex3f(0.0f, 0.0f, 0.0f);
-	glVertex3f(1.0f, 0.0f, 0.0f);
-	glVertex3f(1.0f, 0.0f, -1.0f);
-	glVertex3f(0.0f, 0.0f, -1.0f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(1.0f, 0.0f, 0.0f);
+
+		glTexCoord2f(1.0f, -1.0f);
+		glVertex3f(1.0f, 1.0f, 0.0f);
+
+		normal = calculateNormal(1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+		glNormal3f(normal.x, normal.y, normal.z);
+
+		glTexCoord2f(1.0f, -1.0f);
+		glVertex3f(1.0f, 1.0f, 0.0f);
+
+		glTexCoord2f(0.0f, -1.0f);
+		glVertex3f(0.0f, 1.0f, 0.0f);
+
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(0.0f, 0.0f, 0.0f);
+
 	glEnd();
+
+	// Back
+
+	glBegin(GL_TRIANGLES);
+
+		normal = calculateNormal(0.0f, 0.0f, -1.0f, 0.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f);
+		glNormal3f(normal.x, normal.y, normal.z);
+
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(0.0f, 0.0f, -1.0f);
+
+		glTexCoord2f(0.0f, -1.0f);
+		glVertex3f(0.0f, 1.0f, -1.0f);
+
+		glTexCoord2f(1.0f, -1.0f);
+		glVertex3f(1.0f, 1.0f, -1.0f);
+
+		normal = calculateNormal(1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f);
+		glNormal3f(normal.x, normal.y, normal.z);
+
+		glTexCoord2f(1.0f, -1.0f);
+		glVertex3f(1.0f, 1.0f, -1.0f);
+
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(1.0f, 0.0f, -1.0f);
+
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(0.0f, 0.0f, -1.0f);
+
+	glEnd();
+
+	glDisable(GL_CULL_FACE);
+
+	// right
+	glBegin(GL_QUADS);	
+		// Wierd normal
+		glNormal3f(0.0f, 0.0f, -1.0f);
+		glVertex3f(1.0f, 0.0f, 0.0f);
+		glVertex3f(1.0f, 0.0f, -1.0f);
+		glVertex3f(1.0f, 1.0f, -1.0f);
+		glVertex3f(1.0f, 1.0f, 0.0f);
+	glEnd();
+
+	// left
+	glBegin(GL_TRIANGLES);
+		glNormal3f(0.0f, 0.0f, 1.0f);
+		glVertex3f(0.0f, 0.0f, 0.0f);
+		glVertex3f(0.0f, 1.0f, 0.0f);
+		glVertex3f(0.0f, 1.0f, -1.0f);
+
+		glVertex3f(0.0f, 1.0f, -1.0f);
+		glVertex3f(0.0f, 0.0f, -1.0f);
+		glVertex3f(0.0f, 0.0f, 0.0f);
+		
+	glEnd();
+		
+	// top
+	glBegin(GL_QUADS);
+		glNormal3f(0.0f, 0.0f, 1.0f);
+		glVertex3f(0.0f, 1.0f, 0.0f);
+		glVertex3f(1.0f, 1.0f, 0.0f);
+		glVertex3f(1.0f, 1.0f, -1.0f);
+		glVertex3f(0.0f, 1.0f, -1.0f);
+	glEnd();
+	
+	// bottom
+	glBegin(GL_QUADS);
+		glNormal3f(0.0f, 0.0f, -1.0f);
+		glVertex3f(0.0f, 0.0f, 0.0f);
+		glVertex3f(1.0f, 0.0f, 0.0f);
+		glVertex3f(1.0f, 0.0f, -1.0f);
+		glVertex3f(0.0f, 0.0f, -1.0f);
+	glEnd();
+	
 }
 
 void DrawPlanet(int index)
@@ -831,7 +921,7 @@ void Display(void)
 	glLoadIdentity();
 	
 	gluLookAt(0.0, 0, CameraDistance, CameraCenter.x, CameraCenter.y, CameraCenter.z, 0, 1, 0);			// set the view part of modelview matrix
-	
+
 	glLightfv(GL_LIGHT0, GL_POSITION, LightPos);		// Set Light1 Position, this setting function should be at another place
 
 	DrawObj();
@@ -849,7 +939,6 @@ void Display(void)
 		DrawSatellite(SAT_JUNIPTER_INDEX);		
 	glPopMatrix();
 	
-
 	glDisable(GL_TEXTURE_2D);							// when you draw something without texture, be sure to disable GL_TEXTURE_2D
 
 	glutSwapBuffers();									// swap the drawn buffer to the window
