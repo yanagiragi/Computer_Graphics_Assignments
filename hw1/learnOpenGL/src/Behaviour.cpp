@@ -1,18 +1,17 @@
-//#include "main.cpp"
-
 #include <iostream>
 #include <stdarg.h>
 #include <string>
 #include <vector>
 
-#include <fstream>
-#include <sstream>
+#include <glm\glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
-//#include "Texture.cpp"
 #define MAX_STRING_LENGTH 1024
 #define TEXTURE_NUM 9
 #define UTAH_VERTEX_COUNT 1292
 #define UTAH_FACE_COUNT 2464
+#define ERROR_MESSAGE_LOG_SIZE 512
 
 #define SUN_INDEX 0
 #define MECURY_INDEX 1
@@ -23,6 +22,8 @@
 #define MYSTAR_INDEX 6
 #define SAT_EARTH_INDEX 7
 #define SAT_JUNIPTER_INDEX 8
+
+/* Type Declaration */
 
 #pragma region  StructDecarations
 struct Vector3 {
@@ -65,6 +66,8 @@ struct Planet {
 typedef struct Planet Planet;
 #pragma endregion
 
+/* Variable Declaration */
+
 Obj teapot;
 float vertices[UTAH_VERTEX_COUNT * 3];
 unsigned int indices[UTAH_FACE_COUNT * 3];
@@ -76,6 +79,18 @@ bool frameStop = false;
 bool debugMode = false;
 int nowIndex = 0;
 
+int success;
+char infoLog[ERROR_MESSAGE_LOG_SIZE];
+
+char* vertexShaderSource;
+char* fragmentShaderSource;
+
+unsigned int VAO, VBO, EBO;
+unsigned int vertexShader;
+unsigned int fragmentShader;
+unsigned int shaderProgram;
+
+
 Vector3 CameraCenter;
 float CameraDistance = 20.0f;
 
@@ -85,7 +100,11 @@ float LightAmb[] = { 1.0f, 1.0f, 1.0f, 1.0f };			// Ambient Light Values
 float LightDif[] = { 1.0f, 1.0f, 1.0f, 1.0f };			// Diffuse Light Values
 float LightSpc[] = { 1.0f, 1.0f, 1.0f, 1.0f };			// Specular Light Values
 
-/*================================================================================================================================*/
+
+/* Function Declaration */
+
+#pragma region FunctionDeclaration
+
 void setupPlanetTexture(int index);
 void setupPlanets();
 int ImageLoad(char *filename, Image *image);
@@ -97,9 +116,19 @@ void DrawCube();
 void Display(void);
 void ParseObj();
 void DrawObj_Alter();
+void Destroy();
 void keyboard(unsigned char key, int x, int y);
+bool CreateProgram(unsigned int &shaderProgramInstance, int n_args, ...);
+bool CreateShader(unsigned int &shaderInstance, unsigned int shaderType, const GLchar* shaderSource);
+
+#pragma endregion
+
+
+/* Function Implementation */
 
 void DrawObj() {
+
+	bool flag = false;
 
 	glPushMatrix();
 	// Rotate Around axis
@@ -111,23 +140,30 @@ void DrawObj() {
 	glTranslatef(0.0f, 0.0f, 0.0f);
 	glRotatef(planets[MYSTAR_INDEX].RotateSelfAngle * (float)(frame), planets[MYSTAR_INDEX].RotateSelfAxis.x, planets[MYSTAR_INDEX].RotateSelfAxis.y, planets[MYSTAR_INDEX].RotateSelfAxis.z);
 
-	DrawObj_Alter();
-
-	/*
-	for (int i = 0; i < 2464; ++i) {
-		glBegin(GL_TRIANGLES);
+	if (flag) {
+		DrawObj_Alter();
+	}
+	else {
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, planets[MYSTAR_INDEX].Texture2D);
+		for (int i = 0; i < 2464; ++i) {
+			glBegin(GL_TRIANGLES);
 
 			Vector3 v1 = teapot.positions[(int)(teapot.faces[i].x) - 1];
 			Vector3 v2 = teapot.positions[(int)(teapot.faces[i].y) - 1];
 			Vector3 v3 = teapot.positions[(int)(teapot.faces[i].z) - 1];
-			
+			glTexCoord2f(v1.x, v1.y);
 			glVertex3f(v1.x, v1.y, v1.z);
+			glTexCoord2f(v2.x, v2.y);
 			glVertex3f(v2.x, v2.y, v2.z);
+			glTexCoord2f(v3.x, v3.y);
 			glVertex3f(v3.x, v3.y, v3.z);
 
-		glEnd();
-	}*/
-
+			glEnd();
+		}
+		glDisable(GL_TEXTURE_2D);
+	}
+	
 	glPopMatrix();
 }
 
@@ -511,8 +547,8 @@ void Init()
 {
 	GLenum err = glewInit();
 
-	//glClearColor(0.0, 0.0, 0.0, 1.0);					// set what color should be used when we clean the color buffer
-	glClearColor(0.07f, 0.447f, 0.05f, 1.0);					// set what color should be used when we clean the color buffer
+	glClearColor(0.0, 0.0, 0.0, 1.0);					// set what color should be used when we clean the color buffer
+	
 	glEnable(GL_LIGHT0);								// Enable Light1
 	glEnable(GL_LIGHTING);								// Enable Lighting
 
@@ -923,6 +959,7 @@ void keyboard(unsigned char key, int x, int y)
 			nowIndex = 5;
 			break;
 
+		// Not Finished
 		case 'i':
 			CameraCenter.z += 0.5f;
 			break;
@@ -943,27 +980,6 @@ void keyboard(unsigned char key, int x, int y)
 	glutPostRedisplay(); // this redraws the scene without waiting for the display callback so that any changes appear instantly 
 }
 
-#define ERROR_MESSAGE_LOG_SIZE 512
-
-int success;
-char infoLog[ERROR_MESSAGE_LOG_SIZE];
-
-char* vertexShaderSource = "";
-
-const char* fragmentShaderSource = "#version 330 core\n"
-"out vec4 FragColor;\n"
-"in vec4 c;\n"
-"void main()\n"
-"{\n"
-"   FragColor = c;//vec4(1.0f, 0.0f, 0.0f, 1.0f);\n"
-"}\n\0";
-
-unsigned int VAO, VBO, EBO;
-unsigned int vertexShader;
-unsigned int fragmentShader;
-unsigned int shaderProgram;
-
-
 void DrawObj_Alter()
 {
 	float time = frame;
@@ -973,8 +989,11 @@ void DrawObj_Alter()
 	int vertexColorLocationP = glGetUniformLocation(shaderProgram, "matrixP");
 
 	GLfloat matrixM[16];
+	GLfloat matrixV[16];
 	GLfloat matrixP[16];
 	glGetFloatv(GL_PROJECTION_MATRIX, matrixP);
+
+	glm::mat4 mat;
 
 	glPushMatrix();
 	//glGetFloatv(GL_MODELVIEW_MATRIX, matrixMV);
@@ -1000,16 +1019,15 @@ void DrawObj_Alter()
 	//glTranslatef(0.0f, 0.0f, 0.0f);
 
 	//gluSphere(quad, 2.0f, 20, 5);
-
+	glLoadIdentity();
 	//glLoadIdentity();
-	gluLookAt(0.0, 0, 20, 0, 0, 0, 0, 1, 0);			// set the view part of modelview matrix
-	GLfloat matrixV[16];
+	//gluLookAt(0.0, 0, 20, 0, 0, 0, 0, 1, 0);			// set the view part of modelview matrix
 	//glGetFloatv(GL_MODELVIEW_MATRIX, matrixV);
 
-	glLoadIdentity();
-	//gluPerspective(60.0f, 4.0f / 3.0f, 5.0f, 100.0f);
+	
+	gluPerspective(60.0f * 3.14 / 180.0, 4.0f / 3.0f, 5.0f, 100.0f);
 	//GLfloat matrixP[16];
-	//glGetFloatv(GL_PROJECTION_MATRIX, matrixP);
+	glGetFloatv(GL_PROJECTION_MATRIX, matrixP);
 
 	//glMultMatrixf(matrixP);
 	//glGetFloatv(GL_MODELVIEW_MATRIX, matrixMV);
@@ -1076,8 +1094,9 @@ bool CreateProgram(unsigned int &shaderProgramInstance, int n_args, ...)
 	return success;
 }
 
-
 void Destroy() {
+	free(vertexShaderSource);
+	free(fragmentShaderSource);
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
@@ -1097,19 +1116,28 @@ void ParseObj() {
 		indices[i * 3 + 2] = teapot.faces[i].z - 1;
 	}
 
-	//vertexShaderSource = std::ifstream
-	
 	vertexShaderSource = (char *) malloc(sizeof(char) * MAX_STRING_LENGTH);
 	vertexShaderSource[0] = '\0';
+	fragmentShaderSource = (char *)malloc(sizeof(char) * MAX_STRING_LENGTH);
+	fragmentShaderSource[0] = '\0';
 
 	char *buf = (char *)malloc(sizeof(char) * MAX_STRING_LENGTH);
-	FILE* fp = fopen("../learnOpenGL/vertex.glsl", "r");
+	FILE* fp = fopen("../learnOpenGL/glsl/vertex.glsl", "r");
 	while (fgets(buf, MAX_STRING_LENGTH, fp) != NULL)
 	{
 		strcat(vertexShaderSource, buf);
 	}
-	free(buf);
+	fclose(fp);
 
+	fp = fopen("../learnOpenGL/glsl/fragment.glsl", "r");
+	while (fgets(buf, MAX_STRING_LENGTH, fp) != NULL)
+	{
+		strcat(fragmentShaderSource, buf);
+	}
+	fclose(fp);
+
+	free(buf);
+	
 	CreateShader(vertexShader, GL_VERTEX_SHADER, vertexShaderSource);
 	CreateShader(fragmentShader, GL_FRAGMENT_SHADER, fragmentShaderSource);
 

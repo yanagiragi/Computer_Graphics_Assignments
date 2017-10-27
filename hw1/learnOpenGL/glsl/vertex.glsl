@@ -12,6 +12,6 @@ void main()
 
 	c =  matrixM * pos;
 	gl_Position = c;
-	c = matrixP * pos;
+	c = matrixM * matrixP * pos;
 	//gl_Position = c;
 };
