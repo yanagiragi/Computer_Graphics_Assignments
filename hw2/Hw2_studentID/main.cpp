@@ -370,6 +370,10 @@ void Display(void)
 		DrawObjectsLight(1);
 	glPopMatrix();
 
+	glPushMatrix();
+		obj_ptr[1]->draw_shadow_poly(CamaraPos, CameraYaw);
+	glPopMatrix();
+
 	/* Stencil Test */
 	glPushMatrix();
 		

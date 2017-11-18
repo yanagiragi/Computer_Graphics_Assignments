@@ -19,10 +19,8 @@ public:
 	void scaling(float x, float y, float z);
 	
 	/* you should focus on this two functions */
-	void draw_shadow_poly(const double* CamaraPos);
+	void draw_shadow_poly(const double* , double );
 	void local_light(float* global_light);
-
-	bool isIntersect(float origin, glm::vec3 direction, int planeID);
 
 	float* scale;
 	float* position;
@@ -166,9 +164,28 @@ void object_class::draw()
 	glEnd();
 }
 
-void object_class::draw_shadow_poly(const double* CamaraPos)
+void object_class::draw_shadow_poly(const double* CameraPos,double CameraYaw)
 {
 	/* You may need to do something here */
+	
+	glCullFace(GL_FRONT);
+
+	glStencilMask(0x00);
+	glEnable(GL_STENCIL_TEST);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+
+	glPushMatrix();
+		glLoadIdentity();
+		glTranslatef(CameraPos[0], CameraPos[1], CameraPos[2]);
+	
+		glColor3f(0.0, 0.0, 0.0);
+		glutSolidSphere(3, 20, 20);
+	glPopMatrix();
+
+	glCullFace(GL_BACK);
+	glDisable(GL_STENCIL_TEST);
+	glStencilMask(0xFF);
 	
 }
 
@@ -176,9 +193,13 @@ void object_class::local_light(float* global_Light){
 	
 	vec3 lightPosV3 = vec3(global_Light[0], global_Light[1], global_Light[2]);
 
-	glDisable(GL_LIGHTING);
-	glDisable(GL_CULL_FACE);
+	//glDisable(GL_CULL_FACE);
 
+	glDisable(GL_LIGHTING);
+	glDepthMask(false);
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	glCullFace(GL_BACK);
+	
 	glPushMatrix();
 		glLoadIdentity();//重設為單位矩陣，畫房間
 		glTranslatef(global_Light[0], global_Light[1], global_Light[2]);
@@ -235,7 +256,7 @@ void object_class::local_light(float* global_Light){
 				vec3 lightVec2 = p2 - lightPosV3;
 				
 				// x + y + 0 * z + 0 = 100
-				vec4 groundEq(0, 0, 1, 100);
+				vec4 groundEq(0, 0, 1, 20);
 
 				// Hmmm... I Should Consider as plane formula = planeEq shift long distance,
 				// Or may can't deal with different direction of light
@@ -294,6 +315,7 @@ void object_class::local_light(float* global_Light){
 				glEnd();
 				*/
 
+				// Setup Color For Debug
 				if (j == 0) {
 					glColor3f(0.0, 1.0, 0.0);
 				}
@@ -303,11 +325,34 @@ void object_class::local_light(float* global_Light){
 				else {
 					glColor3f(1.0, 0.0, 0.0);
 				}
+
+				// determine orientation
+				vec3 productResult = cross(p1 - p2, intersectPoint1 - p1);
+				if (dot(productResult, lightPosV3) > 0) {
+					// BackFace Face
+					glFrontFace(GL_CW);
+					glEnable(GL_STENCIL_TEST);
+					glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+					glStencilFunc(GL_INCR, 1, 0xFF);
+					glStencilMask(0xFF);
+				}
+				else {
+					// Front Face
+					glFrontFace(GL_CCW);
+					glEnable(GL_STENCIL_TEST);
+					glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+					glStencilFunc(GL_DECR, 1, 0xFF);
+					glStencilMask(0xFF);
+				}				
+
 				// Draw Triangle of Shadow Volume
 				glBegin(GL_TRIANGLES);
-				glVertex3f(lightPosV3.x, lightPosV3.y, lightPosV3.z);
-				glVertex3f(intersectPoint1.x, intersectPoint1.y, intersectPoint1.z);
-				glVertex3f(intersectPoint2.x, intersectPoint2.y, intersectPoint2.z);
+					glVertex3f(p1.x, p1.y, p1.z);
+					glVertex3f(p2.x, p2.y, p2.z);
+					glVertex3f(intersectPoint1.x, intersectPoint1.y, intersectPoint1.z);
+					glVertex3f(intersectPoint1.x, intersectPoint1.y, intersectPoint1.z);
+					glVertex3f(p2.x, p2.y, p2.z);
+					glVertex3f(intersectPoint2.x, intersectPoint2.y, intersectPoint2.z);
 				glEnd();
 
 				//glNormal3d(n[i][j * 3 + 0], n[i][j * 3 + 1], n[i][j * 3 + 2]);//這個點的法向量
@@ -316,11 +361,14 @@ void object_class::local_light(float* global_Light){
 		}
 
 	glPopMatrix();
-
+	glFrontFace(GL_CCW);
+	
 	glEnable(GL_LIGHTING);
-}
-
-bool object_class::isIntersect(float origin, glm::vec3 direction, int planeID)
-{
-	return false;
+	
+	glDepthMask(true);
+	glStencilMask(0x00);
+	glDisable(GL_STENCIL_TEST);
+	glDisable(GL_LIGHTING);
+	
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
