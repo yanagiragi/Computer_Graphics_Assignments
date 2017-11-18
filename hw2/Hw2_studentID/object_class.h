@@ -169,17 +169,21 @@ void object_class::draw_shadow_poly(const double* CameraPos,double CameraYaw)
 	/* You may need to do something here */
 	
 	glCullFace(GL_FRONT);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glStencilMask(0x00);
 	glEnable(GL_STENCIL_TEST);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	//glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+	//glStencilFunc(GL_EQUAL, 1, 0xFF);
 
 	glPushMatrix();
 		glLoadIdentity();
 		glTranslatef(CameraPos[0], CameraPos[1], CameraPos[2]);
 	
-		glColor3f(0.0, 0.0, 0.0);
+		glColor4f(0.0, 0.0, 0.0, 0.5);
 		glutSolidSphere(3, 20, 20);
 	glPopMatrix();
 
