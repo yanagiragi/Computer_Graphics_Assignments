@@ -19,8 +19,15 @@ using namespace glm;
 
 namespace{
 	//const double CamaraPos[]={1.5, 0.5 ,18.0};
-	const double CamaraPos[]={2.0, 1.0 ,18.0};
+	double CamaraPos[]={2.0, 1.0 ,18.0};
 	const double BarrierPos[]={-2.0,-2.0,-0.5};
+
+	double CameraDistance = sqrtf(CamaraPos[0] * CamaraPos[0] + CamaraPos[1] * CamaraPos[1] + CamaraPos[2] * CamaraPos[2]);
+	double CameraPitch = glm::degrees(glm::asin(CamaraPos[2] / CameraDistance));
+	double CameraYaw = glm::degrees(glm::acos(CamaraPos[1] / (CameraDistance * glm::sin((CameraPitch)))));;
+	
+	int width;
+	int height;
 
 	float LightPos[] = { 2.4f, 2.2f, 2.9f };//global position
 	float LightAmb[] = { 0.1f, 0.1f, 0.3f, 1.0f };			// Ambient Light Values
@@ -136,6 +143,14 @@ void init()
 {
 	glClearColor(0.0, 0.0, 0.0, 1.0);				//指定使用不透明黑色清背景
 	
+	CameraPitch = 73.9187;
+	CameraYaw = 254.655;
+
+	// ReCalculate Camera
+	CamaraPos[0] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::cos(radians(CameraYaw));
+	CamaraPos[2] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::sin(radians(CameraYaw));
+	CamaraPos[1] = CameraDistance * glm::cos(radians(CameraPitch));
+
 	glShadeModel(GL_SMOOTH);
 	q = gluNewQuadric();
 	gluQuadricNormals(q, GL_SMOOTH);					// Enable Smooth Normal Generation
@@ -189,6 +204,10 @@ void idle(){
 void WindowSize(int w, int h)
 {
 	printf("目前視窗大小為%d X %d\n", w, h);
+	
+	width = w;
+	height = h;
+
 	glViewport(0, 0, w, h);							//當視窗長寬改變時，畫面也跟著變
 	glMatrixMode(GL_PROJECTION);					//選擇投影矩陣模式
 	glLoadIdentity();
@@ -203,12 +222,15 @@ void WindowSize(int w, int h)
 void Keyboard(unsigned char key, int x, int y)
 {
 	printf("你所按按鍵的碼是%x\t此時視窗內的滑鼠座標是(%d,%d)\n", key, x, y);
+	
 	if(key==0x62) shadow_mode=!shadow_mode;//b 開關陰影
+	
 	if(key==0x76)//v 選擇物體
 	{
 		obj_counter=(obj_counter+1)%3;
 		printf("Selecting Object: %d\n", obj_counter+1);
 	}
+
 	if(key==0x61) LightPos[0]-=0.1f;//a
 	if(key==0x64) LightPos[0]+=0.1f;//d
 	if(key==0x77) LightPos[1]+=0.1f;//w
@@ -230,8 +252,31 @@ void Keyboard(unsigned char key, int x, int y)
 	if(key==0x37) {obj_ptr[obj_counter]->position[2]-=0.2f;}//numpad7
 	if(key==0x39) {obj_ptr[obj_counter]->position[2]+=0.2f;}//numpad9
 
+	/*if (key == 0x66) { CamaraPos[0] -= 0.3f; } // f
+	if (key == 0x74) { CamaraPos[2] += 0.3f; } // t
+	if (key == 0x67) { CamaraPos[2] -= 0.3f; } // g
+	if (key == 0x68) { CamaraPos[0] += 0.3f; } // h*/
+
+	double CameraSpeed = 3.0f;
+
+	if (key == 0x66) { CameraYaw += CameraSpeed; } // f
+	if (key == 0x68) { CameraYaw -= CameraSpeed; } // h
+	if (key == 0x74) { CameraDistance -= CameraSpeed; } // t
+	if (key == 0x67) { CameraDistance += CameraSpeed; } // g
+	if (key == 0x72) { CameraPitch += CameraSpeed; } // r
+	if (key == 0x79) { CameraPitch -= CameraSpeed; } // y
+
+	cout << "Yaw = " << CameraYaw;
+	cout << ", Pitch = " << CameraPitch << endl;
+	
+
 	if(key==0x20) std::cout<<"light pos:"<<LightPos[0]<<'\t'<<LightPos[1]<<'\t'<<LightPos[2]<<'\n';//space
 	
+	CamaraPos[0] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::cos(radians(CameraYaw));
+	CamaraPos[2] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::sin(radians(CameraYaw));
+	CamaraPos[1] = CameraDistance * glm::cos(radians(CameraPitch));
+
+
 }
 
 void DrawObjects(int count)
@@ -250,6 +295,22 @@ void DrawObjects(int count)
 	}
 }
 
+void DrawObjectsLight(int count)
+{
+	if (count > 3) count = 3;
+
+	for (int i = 0; i < count; i++) {
+		glPushMatrix();
+		glScalef(obj_ptr[i]->scale[0], obj_ptr[i]->scale[1], obj_ptr[i]->scale[2]);
+		glTranslatef(obj_ptr[i]->position[0], obj_ptr[i]->position[1], obj_ptr[i]->position[2]);
+		glRotatef(obj_ptr[i]->rotation[0], 1, 0, 0);
+		glRotatef(obj_ptr[i]->rotation[1], 0, 1, 0);
+		glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);
+		obj_ptr[i]->local_light(LightPos); //draw the objects
+		glPopMatrix();
+	}
+}
+
 void DrawAll()
 {
 	glPushMatrix();//重設為單位矩陣，畫房間
@@ -263,8 +324,6 @@ void DrawAll()
 
 	DrawObjects(3);
 }
-
-
 
 GLfloat *InverseMatrix(GLfloat *inputF) 
 {
@@ -283,11 +342,19 @@ GLfloat *InverseMatrix(GLfloat *inputF)
 void Display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);	//清理緩衝區
-	glMatrixMode(GL_MODELVIEW);						//選擇矩陣模式
+
+	
+	glMatrixMode(GL_PROJECTION);					//選擇投影矩陣模式
+	glLoadIdentity();
+	gluPerspective(45.0f, (GLfloat)width / (GLfloat)height, 0.001f, 100.0f);	
+
+	gluLookAt(CamaraPos[0], CamaraPos[1], CamaraPos[2], 0, 0, 0, 0, 1, 0);
+	
+	glMatrixMode(GL_MODELVIEW);	
+	glLoadIdentity();
 
 	glLightfv(GL_LIGHT1, GL_POSITION, LightPos);// Set Light1 Position
-	
-	glLoadIdentity();
+
 
 	glPushMatrix();
 		glDepthMask(GL_TRUE);
@@ -295,14 +362,18 @@ void Display(void)
 		// For Debug
 		//glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		DrawAll();
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glPopMatrix();
 
+	/* Stencil Test */
+	glPushMatrix();
+		DrawObjectsLight(1);
 	glPopMatrix();
 
 	/* Stencil Test */
 	glPushMatrix();
 		
 		// setup parameters		
-		
 		glEnable(GL_DEPTH_TEST);
 		glDepthMask(GL_FALSE);
 		glDepthFunc(GL_LEQUAL);
@@ -310,16 +381,15 @@ void Display(void)
 
 		glDisable(GL_LIGHTING);
 
-		glClear(GL_STENCIL_BUFFER_BIT);
-		glEnable(GL_STENCIL_TEST);
+		/*glEnable(GL_STENCIL_TEST);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0xFF);
+		glStencilMask(0xFF);*/
 
 		//glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
-		glLoadIdentity();//重設為單位矩陣，畫房間
+		/*glLoadIdentity();//重設為單位矩陣，畫房間
 		glTranslatef(LightPos[0], LightPos[1], LightPos[2]);
 	
 		// get current matrix
@@ -334,11 +404,14 @@ void Display(void)
 			glLoadIdentity();
 			glMultMatrixf(inverseCurrentMatF);
 
-			glColor3f(0.0, 0.0, 0.0);
+			//glColor3f(0.0, 0.0, 0.0);
 
 			// DrawObjects(3);
+			DrawObjectsLight(1);
 			
-		glPopMatrix();
+		glPopMatrix();*/
+
+		//DrawObjectsLight(1);
 
 		// restore parameters		
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
