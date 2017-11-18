@@ -231,14 +231,14 @@ void object_class::local_light(float* global_Light){
 					p2 = vec3(pos[plane[i][j + 1]][0], pos[plane[i][j + 1]][1], pos[plane[i][j + 1]][2]);
 				}
 
-				// For Debug
-				//p2 = vec3(pos[plane[i][j + 2]][0], pos[plane[i][j + 2]][1], pos[plane[i][j + 2]][2]);
-
 				vec3 lightVec1 = p1 - lightPosV3;
 				vec3 lightVec2 = p2 - lightPosV3;
 				
-				// x + y + 0 * z + 0 = 0
+				// x + y + 0 * z + 0 = 100
 				vec4 groundEq(0, 0, 1, 100);
+
+				// Hmmm... I Should Consider as plane formula = planeEq shift long distance,
+				// Or may can't deal with different direction of light
 				
 				double t1 = ((groundEq.x * lightPosV3.x + groundEq.y * lightPosV3.y + groundEq.z * lightPosV3.z + groundEq.z + groundEq.w) * -1.0) / (lightVec1.x + lightVec1.y + lightVec1.z);
 				vec3 intersectPoint1 = lightPosV3 + vec3(lightVec1.x * t1, lightVec1.y * t1, lightVec1.z * t1);
@@ -246,48 +246,53 @@ void object_class::local_light(float* global_Light){
 				double t2 = ((groundEq.x * lightPosV3.x + groundEq.y * lightPosV3.y + groundEq.z * lightPosV3.z + groundEq.z + groundEq.w) * -1.0) / (lightVec2.x + lightVec2.y + lightVec2.z);
 				vec3 intersectPoint2 = lightPosV3 + vec3(lightVec2.x * t2, lightVec2.y * t2, lightVec2.z * t2);
 
-				/*glColor3f(1.0, 0.0, 0.0);
+				/* // Draw Light Position
+				glColor3f(1.0, 0.0, 0.0);
 				glPushMatrix();
 					glTranslatef(lightPosV3.x, lightPosV3.y, lightPosV3.z);
 					glutSolidSphere(.5, 20, 20);
 				glPopMatrix();
+				*/
 
+				/* // Draw p1 Position
 				glColor3f(0.0, 1.0, 0.0);
 				glPushMatrix();
 					glTranslatef(p1.x, p1.y, p1.z);
 					glutSolidSphere(.5, 20, 20);				
 				glPopMatrix();
+				*/
 
+				/* // Draw p2 Position
 				glColor3f(0.0, 1.0, 0.0);
 				glPushMatrix();
-				//glTranslatef(p2.x, p2.y, p2.z);
-				//glutSolidSphere(.5, 20, 20);
+					glTranslatef(p2.x, p2.y, p2.z);
+					glutSolidSphere(.5, 20, 20);
 				glPopMatrix();*/
-
-				glColor3f(0.0, 0.0, 1.0);
-				glPushMatrix();
-				glTranslatef(intersectPoint1.x, intersectPoint1.y, intersectPoint1.z);
-				glutSolidSphere(.5, 20, 20);
-				glPopMatrix();
-
-				glColor3f(0.0, 0.0, 1.0);
-				glPushMatrix();
-				glTranslatef(intersectPoint2.x, intersectPoint2.y, intersectPoint2.z);
-				glutSolidSphere(.5, 20, 20);
-				glPopMatrix();
-
 				
-				//continue;
+				/* // Draw intersectPoint1 Position
+				glColor3f(0.0, 0.0, 1.0);
+				glPushMatrix();
+					glTranslatef(intersectPoint1.x, intersectPoint1.y, intersectPoint1.z);
+					glutSolidSphere(.5, 20, 20);
+				glPopMatrix();
+				*/
+
+				/* // Draw intersectPoint2 Position
+				glColor3f(0.0, 0.0, 1.0);
+				glPushMatrix();
+					glTranslatef(intersectPoint2.x, intersectPoint2.y, intersectPoint2.z);
+					glutSolidSphere(.5, 20, 20);
+				glPopMatrix();
+				*/
+
+				/* // Draw Triangle form lightPos, p1, p2
 				glColor3f(1.0, 1.0, 0.0);
 				glBegin(GL_TRIANGLES);
-					//glVertex3f(lightPosV3.x, lightPosV3.y, lightPosV3.z);
-					//glVertex3f(p1.x, p1.y, p1.z);
-					//glVertex3f(p2.x, p2.y, p2.z);					
-					//glVertex3f(intersectPoint1.x, intersectPoint1.y, intersectPoint1.z);
-					//glVertex3f(intersectPoint1.x, intersectPoint1.y, intersectPoint1.z);
-					//glVertex3f(intersectPoint2.x, intersectPoint2.y, intersectPoint2.z);
-					//glVertex3f(p2.x, p2.y, p2.z);					
+					glVertex3f(lightPosV3.x, lightPosV3.y, lightPosV3.z);
+					glVertex3f(p1.x, p1.y, p1.z);
+					glVertex3f(p2.x, p2.y, p2.z);					
 				glEnd();
+				*/
 
 				if (j == 0) {
 					glColor3f(0.0, 1.0, 0.0);
@@ -298,6 +303,7 @@ void object_class::local_light(float* global_Light){
 				else {
 					glColor3f(1.0, 0.0, 0.0);
 				}
+				// Draw Triangle of Shadow Volume
 				glBegin(GL_TRIANGLES);
 				glVertex3f(lightPosV3.x, lightPosV3.y, lightPosV3.z);
 				glVertex3f(intersectPoint1.x, intersectPoint1.y, intersectPoint1.z);
