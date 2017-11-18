@@ -306,7 +306,7 @@ void DrawObjectsLight(int count)
 		glRotatef(obj_ptr[i]->rotation[0], 1, 0, 0);
 		glRotatef(obj_ptr[i]->rotation[1], 0, 1, 0);
 		glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);
-		obj_ptr[i]->local_light(LightPos); //draw the objects
+		obj_ptr[i]->local_light(LightPos, CamaraPos); //draw the objects
 		glPopMatrix();
 	}
 }

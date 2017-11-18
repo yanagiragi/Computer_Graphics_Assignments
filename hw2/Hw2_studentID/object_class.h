@@ -20,7 +20,7 @@ public:
 	
 	/* you should focus on this two functions */
 	void draw_shadow_poly(const double* , double );
-	void local_light(float* global_light);
+	void local_light(float*, const double*);
 
 	float* scale;
 	float* position;
@@ -171,37 +171,46 @@ void object_class::draw_shadow_poly(const double* CameraPos,double CameraYaw)
 	glCullFace(GL_FRONT);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glDepthMask(GL_FALSE);
+	glDisable(GL_DEPTH_TEST);
 
 	glStencilMask(0x00);
 	glEnable(GL_STENCIL_TEST);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 	//glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
-	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+	glStencilFunc(GL_GREATER, 1, 0xFF);
 	//glStencilFunc(GL_EQUAL, 1, 0xFF);
+	//glStencilFunc(GL_GEQUAL, , 0xFF);
 
 	glPushMatrix();
 		glLoadIdentity();
 		glTranslatef(CameraPos[0], CameraPos[1], CameraPos[2]);
 	
 		glColor4f(0.0, 0.0, 0.0, 0.5);
-		glutSolidSphere(3, 20, 20);
+		glutSolidSphere(0.01, 20, 20);
 	glPopMatrix();
 
 	glCullFace(GL_BACK);
 	glDisable(GL_STENCIL_TEST);
 	glStencilMask(0xFF);
 	
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
 }
 
-void object_class::local_light(float* global_Light){
+void object_class::local_light(float* global_Light, const double* CameraPos){
 	
 	vec3 lightPosV3 = vec3(global_Light[0], global_Light[1], global_Light[2]);
+	vec3 CameraPosV3 = vec3(CameraPos[0], CameraPos[1], CameraPos[2]);
 
 	//glDisable(GL_CULL_FACE);
 
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+
 	glDisable(GL_LIGHTING);
-	glDepthMask(false);
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	
+	//glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 	glCullFace(GL_BACK);
 	
 	glPushMatrix();
@@ -220,8 +229,8 @@ void object_class::local_light(float* global_Light){
 		glMultMatrixf(inverseCurrentMatF);
 
 		
-		//for (int i = 0; i < plane_count; i++)
-		for (int i = 0; i < 1; i++)
+		for (int i = 0; i < plane_count; i++)
+		//for (int i = 0; i < 1; i++)
 		{
 			double a = planeEq[i][0];
 			double b = planeEq[i][1];
@@ -233,7 +242,8 @@ void object_class::local_light(float* global_Light){
 			if (result <= 0) {
 				continue;
 			}
-
+			
+			glDepthMask(GL_FALSE);
 			glColor3f(1.0, 1.0, 1.0);
 			glBegin(GL_TRIANGLES);
 				for (int j = 0; j < 3; j++)
@@ -242,6 +252,10 @@ void object_class::local_light(float* global_Light){
 						glVertex3d(pos[plane[i][j]][0], pos[plane[i][j]][1], pos[plane[i][j]][2]);//這個平面的第j個點
 				}
 			glEnd();
+
+
+			// Start Stencil Test
+			glDepthMask(GL_FALSE);
 
 			for (int j = 0; j < 3; j++)
 			{
@@ -271,6 +285,7 @@ void object_class::local_light(float* global_Light){
 				double t2 = ((groundEq.x * lightPosV3.x + groundEq.y * lightPosV3.y + groundEq.z * lightPosV3.z + groundEq.z + groundEq.w) * -1.0) / (lightVec2.x + lightVec2.y + lightVec2.z);
 				vec3 intersectPoint2 = lightPosV3 + vec3(lightVec2.x * t2, lightVec2.y * t2, lightVec2.z * t2);
 
+				#pragma region debugFunc
 				/* // Draw Light Position
 				glColor3f(1.0, 0.0, 0.0);
 				glPushMatrix();
@@ -320,7 +335,7 @@ void object_class::local_light(float* global_Light){
 				*/
 
 				// Setup Color For Debug
-				if (j == 0) {
+				/*if (j == 0) {
 					glColor3f(0.0, 1.0, 0.0);
 				}
 				else if (j == 1) {
@@ -328,29 +343,41 @@ void object_class::local_light(float* global_Light){
 				}
 				else {
 					glColor3f(1.0, 0.0, 0.0);
-				}
+				}*/
+				#pragma endregion
 
 				// determine orientation
-				vec3 productResult = cross(p1 - p2, intersectPoint1 - p1);
-				if (dot(productResult, lightPosV3) > 0) {
+				vec3 productResult = cross(p2 - p1, p1 - intersectPoint1);
+				if (dot(productResult, CameraPosV3) > 0) {
+				//if (j == 2) {
 					// BackFace Face
 					glFrontFace(GL_CW);
 					glEnable(GL_STENCIL_TEST);
-					glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-					glStencilFunc(GL_INCR, 1, 0xFF);
+					glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+					glStencilFunc(GL_ALWAYS, 1, 0xFF);
 					glStencilMask(0xFF);
+					glDepthFunc(GL_LEQUAL);
+					glDepthMask(false);
+
+					glColor3f(0.0, 1.0, 0.0);
+					//glColor3f(0.0, 0.0, 1.0);
 				}
 				else {
+					continue;
 					// Front Face
 					glFrontFace(GL_CCW);
 					glEnable(GL_STENCIL_TEST);
-					glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-					glStencilFunc(GL_DECR, 1, 0xFF);
+					glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+					glStencilFunc(GL_ALWAYS, 1, 0xFF);
 					glStencilMask(0xFF);
-				}				
+					glDepthFunc(GL_LEQUAL);
+					glDepthMask(false);
+
+					glColor3f(0.0, 0.0, 1.0);
+				}		
 
 				// Draw Triangle of Shadow Volume
-				glBegin(GL_TRIANGLES);
+				glBegin(GL_TRIANGLES);				
 					glVertex3f(p1.x, p1.y, p1.z);
 					glVertex3f(p2.x, p2.y, p2.z);
 					glVertex3f(intersectPoint1.x, intersectPoint1.y, intersectPoint1.z);
@@ -359,6 +386,9 @@ void object_class::local_light(float* global_Light){
 					glVertex3f(intersectPoint2.x, intersectPoint2.y, intersectPoint2.z);
 				glEnd();
 
+
+				glStencilMask(0x00);
+				glDisable(GL_STENCIL_TEST);
 				//glNormal3d(n[i][j * 3 + 0], n[i][j * 3 + 1], n[i][j * 3 + 2]);//這個點的法向量
 				//glVertex3d(pos[plane[i][j]][0], pos[plane[i][j]][1], pos[plane[i][j]][2]);//這個平面的第j個點
 			}
