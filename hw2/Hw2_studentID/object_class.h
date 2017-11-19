@@ -177,8 +177,8 @@ void object_class::draw_shadow_poly(const double* CameraPos,double CameraYaw)
 	glStencilMask(0x00);
 	glEnable(GL_STENCIL_TEST);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-	//glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
-	glStencilFunc(GL_GREATER, 1, 0xFF);
+	glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
+	//glStencilFunc(GL_GREATER, 1, 0xFF);
 	//glStencilFunc(GL_EQUAL, 1, 0xFF);
 	//glStencilFunc(GL_GEQUAL, , 0xFF);
 
@@ -229,8 +229,8 @@ void object_class::local_light(float* global_Light, const double* CameraPos){
 		glMultMatrixf(inverseCurrentMatF);
 
 		
-		for (int i = 0; i < plane_count; i++)
-		//for (int i = 0; i < 1; i++)
+		//for (int i = 0; i < plane_count; i++)
+		for (int i = 0; i < 1; i++)
 		{
 			double a = planeEq[i][0];
 			double b = planeEq[i][1];
@@ -351,20 +351,32 @@ void object_class::local_light(float* global_Light, const double* CameraPos){
 				if (dot(productResult, CameraPosV3) > 0) {
 				//if (j == 2) {
 					// BackFace Face
-					glFrontFace(GL_CW);
-					glEnable(GL_STENCIL_TEST);
+					//glFrontFace(GL_CW);
+					/*glEnable(GL_STENCIL_TEST);
 					glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 					glStencilFunc(GL_ALWAYS, 1, 0xFF);
 					glStencilMask(0xFF);
 					glDepthFunc(GL_LEQUAL);
-					glDepthMask(false);
+					glDepthMask(false);*/
 
 					glColor3f(0.0, 1.0, 0.0);
 					//glColor3f(0.0, 0.0, 1.0);
 				}
 				else {
-					continue;
+					//continue;
 					// Front Face
+					//glFrontFace(GL_CCW);
+					/*glEnable(GL_STENCIL_TEST);
+					glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+					glStencilFunc(GL_ALWAYS, 1, 0xFF);
+					glStencilMask(0xFF);
+					glDepthFunc(GL_LEQUAL);
+					glDepthMask(false);*/
+
+					glColor3f(0.0, 0.0, 1.0);
+				}		
+
+				if (j == 0 || j == 1) {
 					glFrontFace(GL_CCW);
 					glEnable(GL_STENCIL_TEST);
 					glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
@@ -373,8 +385,17 @@ void object_class::local_light(float* global_Light, const double* CameraPos){
 					glDepthFunc(GL_LEQUAL);
 					glDepthMask(false);
 
-					glColor3f(0.0, 0.0, 1.0);
-				}		
+				}
+				else {
+					glFrontFace(GL_CW);
+
+					glEnable(GL_STENCIL_TEST);
+					glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+					glStencilFunc(GL_ALWAYS, 1, 0xFF);
+					glStencilMask(0xFF);
+					glDepthFunc(GL_LEQUAL);
+					glDepthMask(false);
+				}
 
 				// Draw Triangle of Shadow Volume
 				glBegin(GL_TRIANGLES);				
