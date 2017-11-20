@@ -305,21 +305,13 @@ void DrawObjects(int count)
 	}
 }
 
-void DrawObjectsLight(int count)
+void DrawObjectsStencil(int count)
 {
 	if (count > 3) count = 3;
-	
-	int i = 0;
 
 	GLfloat ObjectRotation[3];
-	//GLfloat global_Light[3];
-
 
 	for (int i = 0; i < count; i++) {
-
-		//for (int j = 0; j < 3; ++j) {
-			//global_Light[j] = obj_ptr[i]->position[j] + LightPos[j];
-		//}
 
 		glLoadIdentity();
 
@@ -334,19 +326,8 @@ void DrawObjectsLight(int count)
 		glRotatef(obj_ptr[i]->rotation[1], 0, 1, 0);
 		glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);
 
-		glPushMatrix();
-			/*glRotatef(-1.0 * obj_ptr[i]->rotation[2], 0, 0, 1);
-			glRotatef(-1.0 * obj_ptr[i]->rotation[1], 0, 1, 0);
-			glRotatef(-1.0 * obj_ptr[i]->rotation[0], 1, 0, 0);
-			glTranslatef(-1.0 * obj_ptr[i]->position[0], -1.0 * obj_ptr[i]->position[1], -1.0 * obj_ptr[i]->position[2]);
-
-			glRotatef(obj_ptr[i]->rotation[0], 1, 0, 0);
-			glRotatef(obj_ptr[i]->rotation[1], 0, 1, 0);
-			glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);*/
-
-			obj_ptr[i]->local_light(LightPos, ObjectRotation, debug_mode); //draw the objects
-
-		glPopMatrix();
+		obj_ptr[i]->local_light(LightPos, ObjectRotation, debug_mode); //draw the objects
+		
 	}
 }
 
@@ -368,19 +349,6 @@ void DrawShadow(int count)
 {
 	for(int i = 0; i < count; ++i)
 		obj_ptr[i]->draw_shadow_poly(CamaraPos, CameraYaw);
-}
-
-GLfloat *InverseMatrix(GLfloat *inputF) 
-{
-	mat4 inputM = make_mat4(inputF);
-	mat4 inverseInputM = inverse(inputM);
-
-	float *inverseInputFP = value_ptr(inverseInputM);
-	GLfloat inverseInputF[16];
-	for (int i = 0; i < 16; ++i)
-		inverseInputF[i] = inverseInputFP[i];
-
-	return inverseInputF;
 }
 
 //---------´yÃ¸µe­±---------
@@ -408,13 +376,13 @@ void Display(void)
 
 	/* Stencil Test */
 	glPushMatrix();		
-		DrawObjectsLight(1);
+		DrawObjectsStencil(3);
 	glPopMatrix();
 
 	if(shadow_mode){
 		/* Draw Shadow */
 		glPushMatrix();
-			DrawShadow(1);
+			DrawShadow(3);
 		glPopMatrix();
 	}
 		

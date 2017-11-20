@@ -340,7 +340,6 @@ void object_class::local_light(float* global_Light, const float* ObjectRotation,
 	
 	glPushMatrix();
 
-		
 		for (int i = 0; i < plane_count; i++)
 		//for (int i = 0; i < 1; i++)
 		{
