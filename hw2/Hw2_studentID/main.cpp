@@ -267,15 +267,16 @@ void Keyboard(unsigned char key, int x, int y)
 	if (key == 0x72) { CameraPitch += CameraSpeed; } // r
 	if (key == 0x79) { CameraPitch -= CameraSpeed; } // y
 
-	cout << "Yaw = " << CameraYaw;
-	cout << ", Pitch = " << CameraPitch << endl;
-	
-
-	if(key==0x20) std::cout<<"light pos:"<<LightPos[0]<<'\t'<<LightPos[1]<<'\t'<<LightPos[2]<<'\n';//space
-	
 	CamaraPos[0] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::cos(radians(CameraYaw));
 	CamaraPos[2] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::sin(radians(CameraYaw));
 	CamaraPos[1] = CameraDistance * glm::cos(radians(CameraPitch));
+
+	cout << "Distance = ," << CameraDistance;
+	cout << "Yaw = ," << CameraYaw;
+	cout << "Pitch = " << CameraPitch << endl;
+
+
+	if(key==0x20) std::cout<<"light pos:"<<LightPos[0]<<'\t'<<LightPos[1]<<'\t'<<LightPos[2]<<'\n'; //space
 
 	if (key == 0x7a) {
 		++debug_mode;
@@ -307,10 +308,26 @@ void DrawObjects(int count)
 void DrawObjectsLight(int count)
 {
 	if (count > 3) count = 3;
-
 	
+	int i = 0;
+
+	GLfloat ObjectRotation[3];
+	GLfloat global_Light[3];
+
+
 	for (int i = 0; i < count; i++) {
-		glPushMatrix();
+
+		for (int j = 0; j < 3; ++j) {
+			global_Light[j] = obj_ptr[i]->position[j] + LightPos[j];
+		}
+
+		glLoadIdentity();
+
+		// Setup ObjectRotation
+		ObjectRotation[0] = obj_ptr[i]->rotation[0];
+		ObjectRotation[1] = obj_ptr[i]->rotation[1];
+		ObjectRotation[2] = obj_ptr[i]->rotation[2];
+
 		glScalef(obj_ptr[i]->scale[0], obj_ptr[i]->scale[1], obj_ptr[i]->scale[2]);
 		glTranslatef(obj_ptr[i]->position[0], obj_ptr[i]->position[1], obj_ptr[i]->position[2]);
 		glRotatef(obj_ptr[i]->rotation[0], 1, 0, 0);
@@ -318,18 +335,17 @@ void DrawObjectsLight(int count)
 		glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);
 
 		glPushMatrix();
-			// glLoadIdentity();
-			glRotatef(-1.0 * obj_ptr[i]->rotation[2], 0, 0, 1);
-			glRotatef(-1.0 * obj_ptr[i]->rotation[1], 0, 1, 0);
-			glRotatef(-1.0 * obj_ptr[i]->rotation[0], 1, 0, 0);
-			glTranslatef(-1.0 * obj_ptr[i]->position[0], -1.0 * obj_ptr[i]->position[1], -1.0 * obj_ptr[i]->position[2]);
-			//glScalef(1.0 / obj_ptr[i]->scale[0], 1.0 / obj_ptr[i]->scale[1], 1.0 / obj_ptr[i]->scale[2]);
-		
-			obj_ptr[i]->local_light(LightPos, CamaraPos, debug_mode); //draw the objects
+			//glRotatef(-1.0 * obj_ptr[i]->rotation[2], 0, 0, 1);
+			//glRotatef(-1.0 * obj_ptr[i]->rotation[1], 0, 1, 0);
+			//glRotatef(-1.0 * obj_ptr[i]->rotation[0], 1, 0, 0);
+			//glTranslatef(-1.0 * obj_ptr[i]->position[0], -1.0 * obj_ptr[i]->position[1], -1.0 * obj_ptr[i]->position[2]);
 
-		glEnd();
+			//glRotatef(obj_ptr[i]->rotation[0], 1, 0, 0);
+			//glRotatef(obj_ptr[i]->rotation[1], 0, 1, 0);
+			//glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);
 
-		
+			obj_ptr[i]->local_light(LightPos, ObjectRotation, debug_mode); //draw the objects
+
 		glPopMatrix();
 	}
 }
@@ -346,6 +362,12 @@ void DrawAll()
 	glPopMatrix();
 
 	DrawObjects(3);
+}
+
+void DrawShadow(int count)
+{
+	for(int i = 0; i < count; ++i)
+		obj_ptr[i]->draw_shadow_poly(CamaraPos, CameraYaw);
 }
 
 GLfloat *InverseMatrix(GLfloat *inputF) 
@@ -368,8 +390,8 @@ void Display(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);	//清理緩衝區
 	glDisable(GL_STENCIL_BUFFER_BIT);
 
-	//glClearColor(0.5, 0.5, 0.0, 1.0);
-	glClearColor(1.0, 1.0, 1.0, 1.0);
+	glClearColor(0.0, 0.0, 0.0, 1.0);
+	glLightfv(GL_LIGHT1, GL_POSITION, LightPos);// Set Light1 Position
 	
 	glMatrixMode(GL_PROJECTION);					//選擇投影矩陣模式
 	glLoadIdentity();
@@ -378,47 +400,22 @@ void Display(void)
 	
 	glMatrixMode(GL_MODELVIEW);	
 	glLoadIdentity();
-
-	glLightfv(GL_LIGHT1, GL_POSITION, LightPos);// Set Light1 Position
 	
+	/* Draw All Objects Without Stencil Test*/
 	glPushMatrix();
-		glDepthMask(GL_TRUE);
-		// For Debug
-		//glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		//DrawAll();
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		DrawAll();
 	glPopMatrix();
 
 	/* Stencil Test */
-	glPushMatrix();
-		glPushMatrix();
-			int i = 0;
-			glScalef(obj_ptr[i]->scale[0], obj_ptr[i]->scale[1], obj_ptr[i]->scale[2]);
-			glTranslatef(obj_ptr[i]->position[0], obj_ptr[i]->position[1], obj_ptr[i]->position[2]);
-			glRotatef(obj_ptr[i]->rotation[0], 1, 0, 0);
-			glRotatef(obj_ptr[i]->rotation[1], 0, 1, 0);
-			glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);
-
-			glPushMatrix();
-				// glLoadIdentity();
-				glRotatef(-1.0 * obj_ptr[i]->rotation[2], 0, 0, 1);
-				glRotatef(-1.0 * obj_ptr[i]->rotation[1], 0, 1, 0);
-				glRotatef(-1.0 * obj_ptr[i]->rotation[0], 1, 0, 0);
-				glTranslatef(-1.0 * obj_ptr[i]->position[0], -1.0 * obj_ptr[i]->position[1], -1.0 * obj_ptr[i]->position[2]);
-				//glScalef(1.0 / obj_ptr[i]->scale[0], 1.0 / obj_ptr[i]->scale[1], 1.0 / obj_ptr[i]->scale[2]);
-
-				obj_ptr[i]->local_light(LightPos, CamaraPos, debug_mode); //draw the objects
-			glEnd();
-
-		glPopMatrix();
+	glPushMatrix();		
+		DrawObjectsLight(1);
 	glPopMatrix();
 
-	glPushMatrix();
-		obj_ptr[0]->draw_shadow_poly(CamaraPos, CameraYaw);
-	glPopMatrix();
-	
 	if(shadow_mode){
-		/* You may need to do something here */
+		/* Draw Shadow */
+		glPushMatrix();
+		DrawShadow(1);
+		glPopMatrix();
 	}
 		
 	//單純讓使用者知道光源在哪
@@ -430,7 +427,6 @@ void Display(void)
 	gluSphere(q, 0.1f, 16, 8);//光
 	glEnable(GL_LIGHTING);
 	glDepthMask(GL_TRUE);	
-	
 
 	for(int i=0;i<3;i++){
 		obj_ptr[i]->rotation[0]+=obj_ptr[i]->rotate_speed[0];
@@ -443,7 +439,6 @@ void Display(void)
 
 int main()
 {
-
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_STENCIL);		//描繪模式使用雙緩衝區以及紅綠藍Alpha顏色順序
 	glutInitWindowSize(600, 600);					//視窗長寬
 	glutInitWindowPosition(300, 200);				//視窗左上角的位置

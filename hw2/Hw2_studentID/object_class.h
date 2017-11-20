@@ -22,9 +22,10 @@ public:
 	
 	/* you should focus on this two functions */
 	void draw_shadow_poly(const double* , double );
-	void local_light(float*, const double*, int);
+	void local_light(float*, const float*, int);
 
-	void object_class::Transform_Light(float* global_Light);
+	void object_class::Transform_Light(float*, GLfloat*);
+	GLfloat *Transform(GLfloat*, GLfloat*);
 
 	float* scale;
 	float* position;
@@ -292,24 +293,35 @@ void object_class::draw_shadow_poly(const double* CameraPos,double CameraYaw)
 	glEnable(GL_LIGHTING);
 }
 
-void object_class::Transform_Light(float* global_Light) 
+GLfloat* object_class::Transform(GLfloat* vec, GLfloat* mat)
 {
-	GLfloat mat[16];
-	glGetFloatv(GL_MODELVIEW_MATRIX, mat);
+	GLfloat result[3];
+	result[0] = vec[0] * mat[0] + vec[1] * mat[4] + vec[2] + mat[8];
+	result[1] = vec[0] * mat[1] + vec[1] * mat[5] + vec[2] + mat[9];
+	result[2] = vec[0] * mat[2] + vec[1] * mat[6] + vec[2] + mat[10];
+	return result;
+}
 
+void object_class::Transform_Light(GLfloat* global_Light, GLfloat* mat)
+{
 	light_at_obj[0] = global_Light[0] * mat[0] + global_Light[1] * mat[4] + global_Light[2] + mat[8];
 	light_at_obj[1] = global_Light[0] * mat[1] + global_Light[1] * mat[5] + global_Light[2] + mat[9];
 	light_at_obj[2] = global_Light[0] * mat[2] + global_Light[1] * mat[6] + global_Light[2] + mat[10];
-
 }
 
-void object_class::local_light(float* global_Light, const double* CameraPos, int DebugFlag = 0){
+void object_class::local_light(float* global_Light, const float* ObjectRotation, int DebugFlag = 0){
 	
-	//vec3 lightPosV3 = vec3(global_Light[0], global_Light[1], global_Light[2]);
-	//vec3 CameraPosV3 = vec3(CameraPos[0], CameraPos[1], CameraPos[2]);
+	// Calculate global_light in Object Coordinate and Store result in light_at_obj
+	GLfloat ObjectRotation_M[16];
+	glPushMatrix();
+		glLoadIdentity();
+		glRotatef(-ObjectRotation[2], 0, 0, 1);
+		glRotatef(-ObjectRotation[1], 0, 1, 0);
+		glRotatef(-ObjectRotation[0], 1, 0, 0);
+		glGetFloatv(GL_MODELVIEW_MATRIX, ObjectRotation_M);
+	glPopMatrix();
 
-	Transform_Light(global_Light);
-	//glDisable(GL_CULL_FACE);
+	Transform_Light(global_Light, ObjectRotation_M);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
@@ -328,9 +340,10 @@ void object_class::local_light(float* global_Light, const double* CameraPos, int
 	glCullFace(GL_BACK);
 	
 	glPushMatrix();
+
 		
-		//for (int i = 0; i < plane_count; i++)
-		for (int i = 0; i < 1; i++)
+		for (int i = 0; i < plane_count; i++)
+		//for (int i = 0; i < 1; i++)
 		{
 			double a = planeEq[i][0];
 			double b = planeEq[i][1];
@@ -344,7 +357,7 @@ void object_class::local_light(float* global_Light, const double* CameraPos, int
 			}
 			
 			if (DebugFlag == 2) {
-				// glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+				glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 			}
 
 			glDepthMask(GL_FALSE);
@@ -360,7 +373,7 @@ void object_class::local_light(float* global_Light, const double* CameraPos, int
 			glEnable(GL_STENCIL_TEST);
 
 			if (DebugFlag == 2) {
-				// glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+				glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 			}
 
 			// Start Stencil Test
@@ -393,11 +406,9 @@ void object_class::local_light(float* global_Light, const double* CameraPos, int
 
 				for (int j = 0; j < 3; j++)
 				{
-					//vec3 p1 = vec3(pos[plane[i][j]][0], pos[plane[i][j]][1], pos[plane[i][j]][2]);
 					GLfloat p1[3] = { pos[plane[i][j]][0], pos[plane[i][j]][1], pos[plane[i][j]][2] };
 					GLfloat p2[3];
-					//vec3 p2;
-
+					
 					// Setup point 2: p1 & p2, p2 & p3, p3 & p1
 					if (j == 2) {
 						p2[0] = pos[plane[i][0]][0];
@@ -496,12 +507,16 @@ void object_class::local_light(float* global_Light, const double* CameraPos, int
 						glVertex3f(intersectPoint2[0], intersectPoint2[1], intersectPoint2[2]);
 					glEnd();*/
 
-					glBegin(GL_QUADS);
-						glVertex3f(intersectPoint1[0], intersectPoint1[1], intersectPoint1[2]);
-						glVertex3f(p1[0], p1[1], p1[2]);
-						glVertex3f(p2[0], p2[1], p2[2]);						
-						glVertex3f(intersectPoint2[0], intersectPoint2[1], intersectPoint2[2]);
-					glEnd();
+					glPushMatrix();
+					//glLoadIdentity();
+						
+						glBegin(GL_QUADS);					
+							glVertex3f(intersectPoint1[0], intersectPoint1[1], intersectPoint1[2]);
+							glVertex3f(p1[0], p1[1], p1[2]);
+							glVertex3f(p2[0], p2[1], p2[2]);						
+							glVertex3f(intersectPoint2[0], intersectPoint2[1], intersectPoint2[2]);
+						glEnd();
+					glPopMatrix();
 
 
 
