@@ -20,7 +20,7 @@ public:
 	
 	/* you should focus on this two functions */
 	void draw_shadow_poly(const double* , double );
-	void local_light(float*, const double*);
+	void local_light(float*, const double*, int);
 
 	float* scale;
 	float* position;
@@ -168,16 +168,20 @@ void object_class::draw_shadow_poly(const double* CameraPos,double CameraYaw)
 {
 	/* You may need to do something here */
 	
-	glCullFace(GL_FRONT);
-	glEnable(GL_BLEND);
+	/*glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glCullFace(GL_FRONT);
+	
 	glDepthMask(GL_FALSE);
 	glDisable(GL_DEPTH_TEST);
 
-	glStencilMask(0x00);
 	glEnable(GL_STENCIL_TEST);
+	glStencilMask(0x00);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 	glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
+	//glStencilFunc(GL_ALWAYS, 1, 0xFF);
+
 	//glStencilFunc(GL_GREATER, 1, 0xFF);
 	//glStencilFunc(GL_EQUAL, 1, 0xFF);
 	//glStencilFunc(GL_GEQUAL, , 0xFF);
@@ -185,23 +189,92 @@ void object_class::draw_shadow_poly(const double* CameraPos,double CameraYaw)
 	glPushMatrix();
 		glLoadIdentity();
 		glTranslatef(CameraPos[0], CameraPos[1], CameraPos[2]);
-	
 		glColor4f(0.0, 0.0, 0.0, 0.5);
 		glutSolidSphere(0.01, 20, 20);
 	glPopMatrix();
 
+	// Restore parameters
 	glCullFace(GL_BACK);
+
 	glDisable(GL_STENCIL_TEST);
 	glStencilMask(0xFF);
 	
 	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);*/
+
+
+	
+
+	glCullFace(GL_FRONT);
+	glDepthMask(GL_FALSE);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_STENCIL_TEST);
+	glStencilMask(0x00);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glStencilFunc(GL_EQUAL, 0, 0xFF);
+	glPushMatrix();
+	glLoadIdentity();
+	glTranslatef(CameraPos[0], CameraPos[1], CameraPos[2]);
+	glColor4f(1.0, 0.0, 0.0, 1.0);
+	glutSolidSphere(0.01, 20, 20);
+	glPopMatrix();
+
+	glCullFace(GL_FRONT);
+	glDepthMask(GL_FALSE);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_STENCIL_TEST);
+	glStencilMask(0x00);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glStencilFunc(GL_EQUAL, 1, 0xFF);
+	glPushMatrix();
+	glLoadIdentity();
+	glTranslatef(CameraPos[0], CameraPos[1], CameraPos[2]);
+	glColor4f(0.0, 1.0, 0.0, 1.0);
+	glutSolidSphere(0.01, 20, 20);
+	glPopMatrix();
+
+	glCullFace(GL_FRONT);
+	glDepthMask(GL_FALSE);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_STENCIL_TEST);
+	glStencilMask(0x00);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glStencilFunc(GL_EQUAL, 2, 0xFF);
+	glPushMatrix();
+	glLoadIdentity();
+	glTranslatef(CameraPos[0], CameraPos[1], CameraPos[2]);
+	glColor4f(0.0, 0.0, 1.0, 1.0);
+	glutSolidSphere(0.01, 20, 20);
+	glPopMatrix();
+
+	glCullFace(GL_FRONT);
+	glDepthMask(GL_FALSE);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_STENCIL_TEST);
+	glStencilMask(0x00);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glStencilFunc(GL_GREATER, 2, 0xFF);
+	glPushMatrix();
+	glLoadIdentity();
+	glTranslatef(CameraPos[0], CameraPos[1], CameraPos[2]);
+	glColor4f(1.0, 1.0, 0.0, 1.0);
+	glutSolidSphere(0.01, 20, 20);
+	glPopMatrix();
+
+	// Restore parameters
+	glCullFace(GL_BACK);
+
+	glDisable(GL_STENCIL_TEST);
+	glStencilMask(0xFF);
+
+	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
 }
 
-void object_class::local_light(float* global_Light, const double* CameraPos){
+void object_class::local_light(float* global_Light, const double* CameraPos, int DebugFlag = 0){
 	
-	vec3 lightPosV3 = vec3(global_Light[0], global_Light[1], global_Light[2]);
-	vec3 CameraPosV3 = vec3(CameraPos[0], CameraPos[1], CameraPos[2]);
+	//vec3 lightPosV3 = vec3(global_Light[0], global_Light[1], global_Light[2]);
+	//vec3 CameraPosV3 = vec3(CameraPos[0], CameraPos[1], CameraPos[2]);
 
 	//glDisable(GL_CULL_FACE);
 
@@ -210,23 +283,24 @@ void object_class::local_light(float* global_Light, const double* CameraPos){
 
 	glDisable(GL_LIGHTING);
 	
-	//glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	if(DebugFlag == 0)
+	{
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	}
+	else
+	{
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	}
+
 	glCullFace(GL_BACK);
 	
 	glPushMatrix();
-		glLoadIdentity();//重設為單位矩陣，畫房間
-		glTranslatef(global_Light[0], global_Light[1], global_Light[2]);
+		//glLoadIdentity();//重設為單位矩陣，畫房間
+		//glTranslatef(global_Light[0], global_Light[1], global_Light[2]);
+		//glTranslatef()
 
 		// get current matrix
-		GLfloat currentMatF[16];
-		glGetFloatv(GL_MODELVIEW_MATRIX, currentMatF);
-
-		// get inverse of current matrix
-		GLfloat *inverseCurrentMatF = InverseMatrix(currentMatF);
-
-		// apply inverse of current matrix to identity and Draw Scene
-		glLoadIdentity();
-		glMultMatrixf(inverseCurrentMatF);
+		
 
 		
 		//for (int i = 0; i < plane_count; i++)
@@ -243,7 +317,12 @@ void object_class::local_light(float* global_Light, const double* CameraPos){
 				continue;
 			}
 			
+			if (DebugFlag == 2) {
+				// glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+			}
+
 			glDepthMask(GL_FALSE);
+			//glDisable(GL_STENCIL_TEST);
 			glColor3f(1.0, 1.0, 1.0);
 			glBegin(GL_TRIANGLES);
 				for (int j = 0; j < 3; j++)
@@ -252,168 +331,157 @@ void object_class::local_light(float* global_Light, const double* CameraPos){
 						glVertex3d(pos[plane[i][j]][0], pos[plane[i][j]][1], pos[plane[i][j]][2]);//這個平面的第j個點
 				}
 			glEnd();
+			//glEnable(GL_STENCIL_TEST);
 
+			if (DebugFlag == 2) {
+				// glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+			}
 
 			// Start Stencil Test
 			glDepthMask(GL_FALSE);
 
-			for (int j = 0; j < 3; j++)
+			for (int count = 0; count < 2; ++count) 
 			{
-				vec3 p1 = vec3(pos[plane[i][j]][0], pos[plane[i][j]][1], pos[plane[i][j]][2]);
-				vec3 p2;
-
-				// Setup point 2: p1 & p2, p2 & p3, p3 & p1
-				if (j == 2) {
-					p2 = vec3(pos[plane[i][0]][0], pos[plane[i][0]][1], pos[plane[i][0]][2]);
+				if (count == 0) {
+					
+					/*glFrontFace(GL_CCW);
+					
+					glEnable(GL_STENCIL_TEST);
+					glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+					glStencilFunc(GL_ALWAYS, 1, 0xFF);
+					glStencilMask(0xFF);
+					//glDepthFunc(GL_LEQUAL);
+					glDepthMask(false);*/
 				}
-				else {
-					p2 = vec3(pos[plane[i][j + 1]][0], pos[plane[i][j + 1]][1], pos[plane[i][j + 1]][2]);
+				else { // count == 1
+
+					glFrontFace(GL_CCW);
+
+					glEnable(GL_STENCIL_TEST);
+					glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+					glStencilFunc(GL_ALWAYS, 1, 0xFF);
+					glStencilMask(0xFF);
+					//glDepthFunc(GL_LEQUAL);
+					glDepthMask(false);
 				}
 
-				vec3 lightVec1 = p1 - lightPosV3;
-				vec3 lightVec2 = p2 - lightPosV3;
-				
-				// x + y + 0 * z + 0 = 100
-				vec4 groundEq(0, 0, 1, 20);
+				for (int j = 0; j < 3; j++)
+				{
+					//vec3 p1 = vec3(pos[plane[i][j]][0], pos[plane[i][j]][1], pos[plane[i][j]][2]);
+					GLfloat p1[3] = { pos[plane[i][j]][0], pos[plane[i][j]][1], pos[plane[i][j]][2] };
+					GLfloat p2[3];
+					//vec3 p2;
 
-				// Hmmm... I Should Consider as plane formula = planeEq shift long distance,
-				// Or may can't deal with different direction of light
-				
-				double t1 = ((groundEq.x * lightPosV3.x + groundEq.y * lightPosV3.y + groundEq.z * lightPosV3.z + groundEq.z + groundEq.w) * -1.0) / (lightVec1.x + lightVec1.y + lightVec1.z);
-				vec3 intersectPoint1 = lightPosV3 + vec3(lightVec1.x * t1, lightVec1.y * t1, lightVec1.z * t1);
+					// Setup point 2: p1 & p2, p2 & p3, p3 & p1
+					if (j == 2) {
+						p2[0] = pos[plane[i][0]][0];
+						p2[1] = pos[plane[i][0]][1];
+						p2[2] = pos[plane[i][0]][2];
+					}
+					else {
+						p2[0] = pos[plane[i][j + 1]][0];
+						p2[1] = pos[plane[i][j + 1]][1];
+						p2[2] = pos[plane[i][j + 1]][2];
+					}
 
-				double t2 = ((groundEq.x * lightPosV3.x + groundEq.y * lightPosV3.y + groundEq.z * lightPosV3.z + groundEq.z + groundEq.w) * -1.0) / (lightVec2.x + lightVec2.y + lightVec2.z);
-				vec3 intersectPoint2 = lightPosV3 + vec3(lightVec2.x * t2, lightVec2.y * t2, lightVec2.z * t2);
+					GLfloat lightVec1[3] = { p1[0] - global_Light[0], p1[1] - global_Light[1], p1[2] - global_Light[2] };
+					GLfloat lightVec2[3] = { p2[0] - global_Light[0], p2[1] - global_Light[1], p2[2] - global_Light[2] };
 
-				#pragma region debugFunc
-				/* // Draw Light Position
-				glColor3f(1.0, 0.0, 0.0);
-				glPushMatrix();
+					// x + y + 0 * z + 0 = 40
+					vec4 groundEq(0, 0, 1, 100);
+
+					// Hmmm... I Should Consider as plane formula = planeEq shift long distance,
+					// Or may can't deal with different direction of light
+
+					double t1 = ((groundEq.x * global_Light[0] + groundEq.y * global_Light[2] + groundEq.z * global_Light[2] + groundEq.z + groundEq.w) * -1.0) / (lightVec1[0] + lightVec1[1] + lightVec1[2]);
+					GLfloat intersectPoint1[3] = { global_Light[0] + (lightVec1[0] * t1), global_Light[1] + (lightVec1[1] * t1), global_Light[2] + (lightVec1[2] * t1) };
+
+					double t2 = ((groundEq.x * global_Light[0] + groundEq.y * global_Light[2] + groundEq.z * global_Light[2] + groundEq.z + groundEq.w) * -1.0) / (lightVec2[0] + lightVec2[1] + lightVec2[2]);
+					GLfloat intersectPoint2[3] = { global_Light[0] + (lightVec2[0] * t2), global_Light[1] + (lightVec2[1] * t2), global_Light[2] + (lightVec2[2] * t2) };
+
+					#pragma region debugFunc
+					/* // Draw Light Position
+					glColor3f(1.0, 0.0, 0.0);
+					glPushMatrix();
 					glTranslatef(lightPosV3.x, lightPosV3.y, lightPosV3.z);
 					glutSolidSphere(.5, 20, 20);
-				glPopMatrix();
-				*/
+					glPopMatrix();
+					*/
 
-				/* // Draw p1 Position
-				glColor3f(0.0, 1.0, 0.0);
-				glPushMatrix();
+					/* // Draw p1 Position
+					glColor3f(0.0, 1.0, 0.0);
+					glPushMatrix();
 					glTranslatef(p1.x, p1.y, p1.z);
-					glutSolidSphere(.5, 20, 20);				
-				glPopMatrix();
-				*/
+					glutSolidSphere(.5, 20, 20);
+					glPopMatrix();
+					*/
 
-				/* // Draw p2 Position
-				glColor3f(0.0, 1.0, 0.0);
-				glPushMatrix();
+					/* // Draw p2 Position
+					glColor3f(0.0, 1.0, 0.0);
+					glPushMatrix();
 					glTranslatef(p2.x, p2.y, p2.z);
 					glutSolidSphere(.5, 20, 20);
-				glPopMatrix();*/
-				
-				/* // Draw intersectPoint1 Position
-				glColor3f(0.0, 0.0, 1.0);
-				glPushMatrix();
+					glPopMatrix();*/
+
+					/* // Draw intersectPoint1 Position
+					glColor3f(0.0, 0.0, 1.0);
+					glPushMatrix();
 					glTranslatef(intersectPoint1.x, intersectPoint1.y, intersectPoint1.z);
 					glutSolidSphere(.5, 20, 20);
-				glPopMatrix();
-				*/
+					glPopMatrix();
+					*/
 
-				/* // Draw intersectPoint2 Position
-				glColor3f(0.0, 0.0, 1.0);
-				glPushMatrix();
+					/* // Draw intersectPoint2 Position
+					glColor3f(0.0, 0.0, 1.0);
+					glPushMatrix();
 					glTranslatef(intersectPoint2.x, intersectPoint2.y, intersectPoint2.z);
 					glutSolidSphere(.5, 20, 20);
-				glPopMatrix();
-				*/
+					glPopMatrix();
+					*/
 
-				/* // Draw Triangle form lightPos, p1, p2
-				glColor3f(1.0, 1.0, 0.0);
-				glBegin(GL_TRIANGLES);
+					/* // Draw Triangle form lightPos, p1, p2
+					glColor3f(1.0, 1.0, 0.0);
+					glBegin(GL_TRIANGLES);
 					glVertex3f(lightPosV3.x, lightPosV3.y, lightPosV3.z);
 					glVertex3f(p1.x, p1.y, p1.z);
-					glVertex3f(p2.x, p2.y, p2.z);					
-				glEnd();
-				*/
-
-				// Setup Color For Debug
-				/*if (j == 0) {
-					glColor3f(0.0, 1.0, 0.0);
-				}
-				else if (j == 1) {
-					glColor3f(0.0, 0.0, 1.0);
-				}
-				else {
-					glColor3f(1.0, 0.0, 0.0);
-				}*/
-				#pragma endregion
-
-				// determine orientation
-				vec3 productResult = cross(p2 - p1, p1 - intersectPoint1);
-				if (dot(productResult, CameraPosV3) > 0) {
-				//if (j == 2) {
-					// BackFace Face
-					//glFrontFace(GL_CW);
-					/*glEnable(GL_STENCIL_TEST);
-					glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-					glStencilFunc(GL_ALWAYS, 1, 0xFF);
-					glStencilMask(0xFF);
-					glDepthFunc(GL_LEQUAL);
-					glDepthMask(false);*/
-
-					glColor3f(0.0, 1.0, 0.0);
-					//glColor3f(0.0, 0.0, 1.0);
-				}
-				else {
-					//continue;
-					// Front Face
-					//glFrontFace(GL_CCW);
-					/*glEnable(GL_STENCIL_TEST);
-					glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-					glStencilFunc(GL_ALWAYS, 1, 0xFF);
-					glStencilMask(0xFF);
-					glDepthFunc(GL_LEQUAL);
-					glDepthMask(false);*/
-
-					glColor3f(0.0, 0.0, 1.0);
-				}		
-
-				if (j == 0 || j == 1) {
-					glFrontFace(GL_CCW);
-					glEnable(GL_STENCIL_TEST);
-					glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-					glStencilFunc(GL_ALWAYS, 1, 0xFF);
-					glStencilMask(0xFF);
-					glDepthFunc(GL_LEQUAL);
-					glDepthMask(false);
-
-				}
-				else {
-					glFrontFace(GL_CW);
-
-					glEnable(GL_STENCIL_TEST);
-					glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-					glStencilFunc(GL_ALWAYS, 1, 0xFF);
-					glStencilMask(0xFF);
-					glDepthFunc(GL_LEQUAL);
-					glDepthMask(false);
-				}
-
-				// Draw Triangle of Shadow Volume
-				glBegin(GL_TRIANGLES);				
-					glVertex3f(p1.x, p1.y, p1.z);
 					glVertex3f(p2.x, p2.y, p2.z);
-					glVertex3f(intersectPoint1.x, intersectPoint1.y, intersectPoint1.z);
-					glVertex3f(intersectPoint1.x, intersectPoint1.y, intersectPoint1.z);
-					glVertex3f(p2.x, p2.y, p2.z);
-					glVertex3f(intersectPoint2.x, intersectPoint2.y, intersectPoint2.z);
-				glEnd();
+					glEnd();
+					*/
+
+					// Setup Color For Debug
+					if (j == 0) {
+						glColor3f(0.0, 1.0, 0.0);
+					}
+					else if (j == 1) {
+						glColor3f(0.0, 0.0, 1.0);
+					}
+					else {
+						glColor3f(1.0, 0.0, 0.0);
+					}
+#pragma endregion
+
+					// Draw Triangle of Shadow Volume
+					/*glBegin(GL_TRIANGLES);
+						glVertex3f(p1[0], p1[1], p1[2]);
+						glVertex3f(p2[0], p2[1], p2[2]);
+						glVertex3f(intersectPoint1[0], intersectPoint1[1], intersectPoint1[2]);
+						glVertex3f(intersectPoint1[0], intersectPoint1[1], intersectPoint1[2]);
+						glVertex3f(p2[0], p2[1], p2[2]);
+						glVertex3f(intersectPoint2[0], intersectPoint2[1], intersectPoint2[2]);
+					glEnd();*/
+
+					glBegin(GL_QUADS);
+						glVertex3f(intersectPoint1[0], intersectPoint1[1], intersectPoint1[2]);
+						glVertex3f(p1[0], p1[1], p1[2]);
+						glVertex3f(p2[0], p2[1], p2[2]);						
+						glVertex3f(intersectPoint2[0], intersectPoint2[1], intersectPoint2[2]);
+					glEnd();
 
 
-				glStencilMask(0x00);
-				glDisable(GL_STENCIL_TEST);
-				//glNormal3d(n[i][j * 3 + 0], n[i][j * 3 + 1], n[i][j * 3 + 2]);//這個點的法向量
-				//glVertex3d(pos[plane[i][j]][0], pos[plane[i][j]][1], pos[plane[i][j]][2]);//這個平面的第j個點
-			}
-		}
+
+				} // End of j-Loop
+			} // End of Count-Loop
+		} // End of i-Loop
 
 	glPopMatrix();
 	glFrontFace(GL_CCW);

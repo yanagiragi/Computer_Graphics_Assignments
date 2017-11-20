@@ -48,7 +48,8 @@ namespace{
 
 	image_class* image;
 
-	bool shadow_mode=true;
+	bool shadow_mode = true;
+	int debug_mode = 0;
 }
 
 void DrawGLRoom()										// Draw The Room (Box)
@@ -143,8 +144,8 @@ void init()
 {
 	glClearColor(0.0, 0.0, 0.0, 1.0);				//指定使用不透明黑色清背景
 	
-	CameraPitch = 73.9187;
-	CameraYaw = 254.655;
+	CameraPitch = 58.9187;
+	CameraYaw = 428.655;
 
 	// ReCalculate Camera
 	CamaraPos[0] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::cos(radians(CameraYaw));
@@ -276,6 +277,12 @@ void Keyboard(unsigned char key, int x, int y)
 	CamaraPos[2] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::sin(radians(CameraYaw));
 	CamaraPos[1] = CameraDistance * glm::cos(radians(CameraPitch));
 
+	if (key == 0x7a) {
+		++debug_mode;
+		if (debug_mode == 3) {
+			debug_mode = 0;
+		}
+	}
 
 }
 
@@ -283,7 +290,9 @@ void DrawObjects(int count)
 {
 	if (count > 3) count = 3;
 
+	//for (int i = 2; i < 3; i++) {
 	for (int i = 0; i < count; i++) {
+		
 		glPushMatrix();
 		glScalef(obj_ptr[i]->scale[0], obj_ptr[i]->scale[1], obj_ptr[i]->scale[2]);
 		glTranslatef(obj_ptr[i]->position[0], obj_ptr[i]->position[1], obj_ptr[i]->position[2]);
@@ -299,6 +308,7 @@ void DrawObjectsLight(int count)
 {
 	if (count > 3) count = 3;
 
+	
 	for (int i = 0; i < count; i++) {
 		glPushMatrix();
 		glScalef(obj_ptr[i]->scale[0], obj_ptr[i]->scale[1], obj_ptr[i]->scale[2]);
@@ -306,7 +316,20 @@ void DrawObjectsLight(int count)
 		glRotatef(obj_ptr[i]->rotation[0], 1, 0, 0);
 		glRotatef(obj_ptr[i]->rotation[1], 0, 1, 0);
 		glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);
-		obj_ptr[i]->local_light(LightPos, CamaraPos); //draw the objects
+
+		glPushMatrix();
+			// glLoadIdentity();
+			glRotatef(-1.0 * obj_ptr[i]->rotation[2], 0, 0, 1);
+			glRotatef(-1.0 * obj_ptr[i]->rotation[1], 0, 1, 0);
+			glRotatef(-1.0 * obj_ptr[i]->rotation[0], 1, 0, 0);
+			glTranslatef(-1.0 * obj_ptr[i]->position[0], -1.0 * obj_ptr[i]->position[1], -1.0 * obj_ptr[i]->position[2]);
+			//glScalef(1.0 / obj_ptr[i]->scale[0], 1.0 / obj_ptr[i]->scale[1], 1.0 / obj_ptr[i]->scale[2]);
+		
+			obj_ptr[i]->local_light(LightPos, CamaraPos, debug_mode); //draw the objects
+
+		glEnd();
+
+		
 		glPopMatrix();
 	}
 }
@@ -342,7 +365,7 @@ GLfloat *InverseMatrix(GLfloat *inputF)
 void Display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);	//清理緩衝區
-
+	glClearColor(0.5, 0.5, 0.0, 1.0);
 	
 	glMatrixMode(GL_PROJECTION);					//選擇投影矩陣模式
 	glLoadIdentity();
@@ -361,104 +384,43 @@ void Display(void)
 
 		// For Debug
 		//glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		DrawAll();
+		//DrawAll();
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glPopMatrix();
-
-	/* Stencil Test */
-	glPushMatrix();
-		DrawObjectsLight(1);
-	glPopMatrix();
-
-	glPushMatrix();
-		obj_ptr[1]->draw_shadow_poly(CamaraPos, CameraYaw);
-	glPopMatrix();
-
-	/* Stencil Test */
-	glPushMatrix();
-		
-		// setup parameters		
-		glEnable(GL_DEPTH_TEST);
-		glDepthMask(GL_FALSE);
-		glDepthFunc(GL_LEQUAL);
-		//glDepthFunc(GL_GREATER);
-
-		glDisable(GL_LIGHTING);
-
-		/*glEnable(GL_STENCIL_TEST);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0xFF);*/
-
-		//glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-		/*glLoadIdentity();//重設為單位矩陣，畫房間
-		glTranslatef(LightPos[0], LightPos[1], LightPos[2]);
 	
-		// get current matrix
-		GLfloat currentMatF[16];
-		glGetFloatv(GL_MODELVIEW_MATRIX, currentMatF);
-		
-		// get inverse of current matrix
-		GLfloat *inverseCurrentMatF = InverseMatrix(currentMatF);
+	glPushMatrix();
+		obj_ptr[0]->draw_shadow_poly(CamaraPos, CameraYaw);
+	glPopMatrix();
+	glutSwapBuffers();
+	return;
 
-		// apply inverse of current matrix to identity and Draw Scene
+	/* Stencil Test */
+	glPushMatrix();
 		glPushMatrix();
-			glLoadIdentity();
-			glMultMatrixf(inverseCurrentMatF);
+			int i = 0;
+			glScalef(obj_ptr[i]->scale[0], obj_ptr[i]->scale[1], obj_ptr[i]->scale[2]);
+			glTranslatef(obj_ptr[i]->position[0], obj_ptr[i]->position[1], obj_ptr[i]->position[2]);
+			glRotatef(obj_ptr[i]->rotation[0], 1, 0, 0);
+			glRotatef(obj_ptr[i]->rotation[1], 0, 1, 0);
+			glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);
 
-			//glColor3f(0.0, 0.0, 0.0);
+			glPushMatrix();
+				// glLoadIdentity();
+				glRotatef(-1.0 * obj_ptr[i]->rotation[2], 0, 0, 1);
+				glRotatef(-1.0 * obj_ptr[i]->rotation[1], 0, 1, 0);
+				glRotatef(-1.0 * obj_ptr[i]->rotation[0], 1, 0, 0);
+				glTranslatef(-1.0 * obj_ptr[i]->position[0], -1.0 * obj_ptr[i]->position[1], -1.0 * obj_ptr[i]->position[2]);
+				//glScalef(1.0 / obj_ptr[i]->scale[0], 1.0 / obj_ptr[i]->scale[1], 1.0 / obj_ptr[i]->scale[2]);
 
-			// DrawObjects(3);
-			DrawObjectsLight(1);
-			
-		glPopMatrix();*/
+				obj_ptr[i]->local_light(LightPos, CamaraPos, debug_mode); //draw the objects
+			glEnd();
 
-		//DrawObjectsLight(1);
-
-		// restore parameters		
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		
-		glDepthMask(GL_TRUE);
-		glDepthFunc(GL_LEQUAL);
-
-		glEnable(GL_LIGHTING);
-		
-		glStencilMask(0xff);
-		glDisable(GL_STENCIL_TEST);
-
+		glPopMatrix();
 	glPopMatrix();
 
-	/* Stencil Debug Test */
-	/*glPushMatrix();
-
-		// setup parameters
-		glEnable(GL_STENCIL_TEST);
-		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-		glStencilMask(0x00);		
-
-		glDisable(GL_DEPTH_TEST);
-
-		glLoadIdentity();
-		glColor3f(0.0, 0.0, 0.0);
-		
-		glBegin(GL_QUADS);
-			glVertex3f(0.0, 0.0, 0.0);
-			glVertex3f(0.0, 1.0, 0.0);
-			glVertex3f(1.0, 1.0, 0.0);
-			glVertex3f(1.0, 0.0, 0.0);
-		glEnd();
-
-		// restore parameters
-		glEnable(GL_DEPTH_TEST);
-		glStencilMask(0xFF);
-		glDisable(GL_STENCIL_TEST);
-
-	glPopMatrix();*/
-	
-	
+	glPushMatrix();
+		obj_ptr[0]->draw_shadow_poly(CamaraPos, CameraYaw);
+	glPopMatrix();
 	
 	if(shadow_mode){
 		/* You may need to do something here */
