@@ -312,14 +312,14 @@ void DrawObjectsLight(int count)
 	int i = 0;
 
 	GLfloat ObjectRotation[3];
-	GLfloat global_Light[3];
+	//GLfloat global_Light[3];
 
 
 	for (int i = 0; i < count; i++) {
 
-		for (int j = 0; j < 3; ++j) {
-			global_Light[j] = obj_ptr[i]->position[j] + LightPos[j];
-		}
+		//for (int j = 0; j < 3; ++j) {
+			//global_Light[j] = obj_ptr[i]->position[j] + LightPos[j];
+		//}
 
 		glLoadIdentity();
 
@@ -335,14 +335,14 @@ void DrawObjectsLight(int count)
 		glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);
 
 		glPushMatrix();
-			//glRotatef(-1.0 * obj_ptr[i]->rotation[2], 0, 0, 1);
-			//glRotatef(-1.0 * obj_ptr[i]->rotation[1], 0, 1, 0);
-			//glRotatef(-1.0 * obj_ptr[i]->rotation[0], 1, 0, 0);
-			//glTranslatef(-1.0 * obj_ptr[i]->position[0], -1.0 * obj_ptr[i]->position[1], -1.0 * obj_ptr[i]->position[2]);
+			/*glRotatef(-1.0 * obj_ptr[i]->rotation[2], 0, 0, 1);
+			glRotatef(-1.0 * obj_ptr[i]->rotation[1], 0, 1, 0);
+			glRotatef(-1.0 * obj_ptr[i]->rotation[0], 1, 0, 0);
+			glTranslatef(-1.0 * obj_ptr[i]->position[0], -1.0 * obj_ptr[i]->position[1], -1.0 * obj_ptr[i]->position[2]);
 
-			//glRotatef(obj_ptr[i]->rotation[0], 1, 0, 0);
-			//glRotatef(obj_ptr[i]->rotation[1], 0, 1, 0);
-			//glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);
+			glRotatef(obj_ptr[i]->rotation[0], 1, 0, 0);
+			glRotatef(obj_ptr[i]->rotation[1], 0, 1, 0);
+			glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);*/
 
 			obj_ptr[i]->local_light(LightPos, ObjectRotation, debug_mode); //draw the objects
 
@@ -414,7 +414,7 @@ void Display(void)
 	if(shadow_mode){
 		/* Draw Shadow */
 		glPushMatrix();
-		DrawShadow(1);
+			DrawShadow(1);
 		glPopMatrix();
 	}
 		

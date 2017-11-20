@@ -304,9 +304,8 @@ GLfloat* object_class::Transform(GLfloat* vec, GLfloat* mat)
 
 void object_class::Transform_Light(GLfloat* global_Light, GLfloat* mat)
 {
-	light_at_obj[0] = global_Light[0] * mat[0] + global_Light[1] * mat[4] + global_Light[2] + mat[8];
-	light_at_obj[1] = global_Light[0] * mat[1] + global_Light[1] * mat[5] + global_Light[2] + mat[9];
-	light_at_obj[2] = global_Light[0] * mat[2] + global_Light[1] * mat[6] + global_Light[2] + mat[10];
+	for (int i = 0; i < 3; i++) // 新的光點
+		light_at_obj[i] = mat[i] * global_Light[0] + mat[4 + i] * global_Light[1] + mat[8 + i] * global_Light[2] + mat[12 + i];
 }
 
 void object_class::local_light(float* global_Light, const float* ObjectRotation, int DebugFlag = 0){
@@ -350,7 +349,7 @@ void object_class::local_light(float* global_Light, const float* ObjectRotation,
 			double c = planeEq[i][2];
 			double d = planeEq[i][4];
 
-			double result = a * global_Light[0] + b * global_Light[1] + c * global_Light[2] + d;
+			double result = a * light_at_obj[0] + b * light_at_obj[1] + c * light_at_obj[2] + d;
 
 			if (result <= 0) {
 				continue;
