@@ -364,35 +364,30 @@ GLfloat *InverseMatrix(GLfloat *inputF)
 //---------描繪畫面---------
 void Display(void)
 {
+	glEnable(GL_STENCIL_BUFFER_BIT);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);	//清理緩衝區
-	glClearColor(0.5, 0.5, 0.0, 1.0);
+	glDisable(GL_STENCIL_BUFFER_BIT);
+
+	//glClearColor(0.5, 0.5, 0.0, 1.0);
+	glClearColor(1.0, 1.0, 1.0, 1.0);
 	
 	glMatrixMode(GL_PROJECTION);					//選擇投影矩陣模式
 	glLoadIdentity();
 	gluPerspective(45.0f, (GLfloat)width / (GLfloat)height, 0.001f, 100.0f);	
-
 	gluLookAt(CamaraPos[0], CamaraPos[1], CamaraPos[2], 0, 0, 0, 0, 1, 0);
 	
 	glMatrixMode(GL_MODELVIEW);	
 	glLoadIdentity();
 
 	glLightfv(GL_LIGHT1, GL_POSITION, LightPos);// Set Light1 Position
-
-
+	
 	glPushMatrix();
 		glDepthMask(GL_TRUE);
-
 		// For Debug
 		//glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		//DrawAll();
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glPopMatrix();
-	
-	glPushMatrix();
-		obj_ptr[0]->draw_shadow_poly(CamaraPos, CameraYaw);
-	glPopMatrix();
-	glutSwapBuffers();
-	return;
 
 	/* Stencil Test */
 	glPushMatrix();
@@ -448,21 +443,21 @@ void Display(void)
 
 int main()
 {
-	
+
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_STENCIL);		//描繪模式使用雙緩衝區以及紅綠藍Alpha顏色順序
 	glutInitWindowSize(600, 600);					//視窗長寬
 	glutInitWindowPosition(300, 200);				//視窗左上角的位置
 	glutCreateWindow("HW2_shadow_studentID");		//建立視窗並打上標題
 	init();
-	//下面三個與Callback函式有關
+													//下面三個與Callback函式有關
 	glutReshapeFunc(WindowSize);					//當視窗改變大小時會獲取新的視窗長寬
 	glutKeyboardFunc(Keyboard);						//獲取鍵盤輸入訊息
-	//glutSpecialFunc(SpecialInput);//可以用來得到上下左右等特殊鍵，不過用不到
+	//glutSpecialFunc(SpecialInput);				//可以用來得到上下左右等特殊鍵，不過用不到
 	glutDisplayFunc(Display);						//負責描繪
 	glutIdleFunc(idle);
 	glutMainLoop();									//進入主迴圈
 
-	for(int i=0;i<6;i++) image[i].~image_class();//叫的土地要清掉
+	for(int i=0;i<6;i++) image[i].~image_class();	//叫的土地要清掉
 	operator delete(image);
 
 	return 0;
