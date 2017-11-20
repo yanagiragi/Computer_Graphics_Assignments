@@ -376,13 +376,13 @@ void Display(void)
 
 	/* Stencil Test */
 	glPushMatrix();		
-		DrawObjectsStencil(3);
+		DrawObjectsStencil(1);
 	glPopMatrix();
 
 	if(shadow_mode){
 		/* Draw Shadow */
 		glPushMatrix();
-			DrawShadow(3);
+			DrawShadow(1);
 		glPopMatrix();
 	}
 		
