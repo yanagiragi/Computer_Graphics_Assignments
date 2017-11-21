@@ -4,24 +4,21 @@
 #include "../GL/glut.h"
 
 #include <glm/glm.hpp>
-#include <glm/matrix.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 using namespace std;
 using namespace glm;
 
-//unsigned int gggdata[800][600];
 
 class object_class
 {
 public:
-	object_class(const char* in_filename);//load file
+	object_class(const char* in_filename);	//load file
 	~object_class();
-	void draw();//draw this object
+	void draw();							//draw this object
 	void scaling(float x, float y, float z);
 
 	/* you should focus on this two functions */
-	void local_light(float*, const float*, int);
+	void Stencil(float*, const float*, int);
 	void Transform_Light(GLfloat* , GLfloat* );
 
 	float* scale;
@@ -30,25 +27,12 @@ public:
 	float* rotate_speed;
 	float* light_at_obj;
 
-	int points_count;//有多少點
-	int plane_count;//有多少三角形平面
-	double** pos;//紀錄local?Em local address of points
-	int** plane;//紀錄哪些點(編號)組成平面 
-	double** n;//紀錄每個面三個點的法向量，用在繪圖 normal vector of every points
-	double** planeEq;//紀錄平面方程式，非常op啊
-
-	GLfloat *InverseMatrix(GLfloat *inputF)
-	{
-		mat4 inputM = make_mat4(inputF);
-		mat4 inverseInputM = inverse(inputM);
-
-		float *inverseInputFP = value_ptr(inverseInputM);
-		GLfloat inverseInputF[16];
-		for (int i = 0; i < 16; ++i)
-			inverseInputF[i] = inverseInputFP[i];
-
-		return inverseInputF;
-	}
+	int points_count;		//有多少點
+	int plane_count;		//有多少三角形平面
+	double** pos;			//紀錄local?Em local address of points
+	int** plane;			//紀錄哪些點(編號)組成平面 
+	double** n;					//紀錄每個面三個點的法向量，用在繪圖 normal vector of every points
+	double** planeEq;		//紀錄平面方程式，非常op啊
 
 };
 
@@ -159,8 +143,8 @@ void object_class::draw()
 		//if(i==4||i==5)
 		for (int j = 0; j < 3; j++)
 		{
-			glNormal3d(n[i][j * 3 + 0], n[i][j * 3 + 1], n[i][j * 3 + 2]);//這個點的法向量
-			glVertex3d(pos[plane[i][j]][0], pos[plane[i][j]][1], pos[plane[i][j]][2]);//這個平面的第j個點
+			glNormal3d(n[i][j * 3 + 0], n[i][j * 3 + 1], n[i][j * 3 + 2]);				//這個點的法向量
+			glVertex3d(pos[plane[i][j]][0], pos[plane[i][j]][1], pos[plane[i][j]][2]);	//這個平面的第j個點
 		}
 	}
 	glEnd();
@@ -172,41 +156,37 @@ void object_class::Transform_Light(GLfloat* global_Light, GLfloat* mat)
 		light_at_obj[i] = mat[i] * global_Light[0] + mat[4 + i] * global_Light[1] + mat[8 + i] * global_Light[2] + mat[12 + i];
 }
 
-void object_class::local_light(float* global_Light, const float* ObjectRotation, int DebugFlag = 0) {
+void object_class::Stencil(float* global_Light, const float* ObjectRotation, int DebugFlag = 0) {
 
 	// Calculate global_light in Object Coordinate and Store result in light_at_obj
 	GLfloat ObjectRotation_M[16];
 	glPushMatrix();
-	glLoadIdentity();
+		glLoadIdentity();
 	
-	glRotatef(-ObjectRotation[2], 0, 0, 1);
-	glRotatef(-ObjectRotation[1], 0, 1, 0);
-	glRotatef(-ObjectRotation[0], 1, 0, 0);
-	glTranslatef(-position[0], -position[1], -position[2]);
-	glScalef(1.0/scale[0], 1.0/scale[1], 1.0/scale[2]);
+		glRotatef(-ObjectRotation[2], 0, 0, 1);
+		glRotatef(-ObjectRotation[1], 0, 1, 0);
+		glRotatef(-ObjectRotation[0], 1, 0, 0);
+		glTranslatef(-position[0], -position[1], -position[2]);
+		glScalef(1.0/scale[0], 1.0/scale[1], 1.0/scale[2]);
 
-	glGetFloatv(GL_MODELVIEW_MATRIX, ObjectRotation_M);
+		glGetFloatv(GL_MODELVIEW_MATRIX, ObjectRotation_M);
 	glPopMatrix();
 
 	Transform_Light(global_Light, ObjectRotation_M);
 
 	glEnable(GL_DEPTH_TEST);
-	glDepthMask(GL_TRUE);
+	glDepthMask(GL_FALSE);
 
 	glDisable(GL_LIGHTING);
 
-	if (DebugFlag == 0)
-	{
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	}
-	else
-	{
-		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-	}
-
 	glCullFace(GL_BACK);
 
-	glPushMatrix();
+	if (DebugFlag == 0){
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	}
+	else{
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	}
 
 	for (int i = 0; i < plane_count; i++)
 	{
@@ -219,58 +199,56 @@ void object_class::local_light(float* global_Light, const float* ObjectRotation,
 
 		double result = a * light_at_obj[0] + b * light_at_obj[1] + c * light_at_obj[2] + d;
 
+		// Cull Face Back toward Light
 		if (result <= 0) {
 			continue;
 		}
 
 		if (DebugFlag == 2) {
+			// Draw Object For Debug
+
 			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		}
+			
+			glDisable(GL_STENCIL_TEST);
+			
+			glColor3f(1.0, 1.0, 1.0);
+			glBegin(GL_TRIANGLES);
+				for (int j = 0; j < 3; j++)
+				{
+					glNormal3d(n[i][j * 3 + 0], n[i][j * 3 + 1], n[i][j * 3 + 2]);//這個點的法向量
+					glVertex3d(pos[plane[i][j]][0], pos[plane[i][j]][1], pos[plane[i][j]][2]);//這個平面的第j個點
+				}
+			glEnd();
 
-		glDepthMask(GL_FALSE);
-		glDisable(GL_STENCIL_TEST);
-		glColor3f(1.0, 1.0, 1.0);
-		glBegin(GL_TRIANGLES);
-		for (int j = 0; j < 3; j++)
-		{
-			glNormal3d(n[i][j * 3 + 0], n[i][j * 3 + 1], n[i][j * 3 + 2]);//這個點的法向量
-			glVertex3d(pos[plane[i][j]][0], pos[plane[i][j]][1], pos[plane[i][j]][2]);//這個平面的第j個點
-		}
-		glEnd();
-		glEnable(GL_STENCIL_TEST);
-
-		if (DebugFlag == 2) {
+			glEnable(GL_STENCIL_TEST);
 			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		}
-
+		
 		// Start Stencil Test
-		glDepthMask(GL_FALSE);
-
 		for (int count = 0; count < 2; ++count)
 		{
-			if (count == 1) {
-				//continue;
-				glFrontFace(GL_CCW);
-
-				glEnable(GL_STENCIL_TEST);
-				glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-				glStencilFunc(GL_ALWAYS, 1, 0xFF);
-				glStencilMask(0xFF);
-				//glDepthFunc(GL_LEQUAL);
-				glDepthMask(false);
-			}
-			else { // count == 1
-
+			if (count == 0) {
 				glFrontFace(GL_CW);
 
 				glEnable(GL_STENCIL_TEST);
 				glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 				glStencilFunc(GL_ALWAYS, 1, 0xFF);
 				glStencilMask(0xFF);
-				//glDepthFunc(GL_LEQUAL);
+
 				glDepthMask(false);
 			}
+			else { // count == 1
+				glFrontFace(GL_CCW);
 
+				glEnable(GL_STENCIL_TEST);
+				glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+				glStencilFunc(GL_ALWAYS, 1, 0xFF);
+				glStencilMask(0xFF);
+
+				glDepthMask(false);			
+			}
+
+			// Loop Through Triangles for calculating three ray-interscetion
 			for (int j = 0; j < 3; j++)
 			{
 				GLfloat p1[3] = { pos[plane[i][j]][0], pos[plane[i][j]][1], pos[plane[i][j]][2] };
@@ -291,70 +269,26 @@ void object_class::local_light(float* global_Light, const float* ObjectRotation,
 				GLfloat lightVec1[3] = { p1[0] - light_at_obj[0], p1[1] - light_at_obj[1], p1[2] - light_at_obj[2] };
 				GLfloat lightVec2[3] = { p2[0] - light_at_obj[0], p2[1] - light_at_obj[1], p2[2] - light_at_obj[2] };
 
-				// x + y + 0 * z + 0 = 40
-				/*
-				vec4 groundEq(0, 0, 1, 100);
-
-				// Hmmm... I Should Consider as plane formula = planeEq shift long distance,
-				// Or may can't deal with different direction of light
-
-				double t1 = ((groundEq.x * light_at_obj[0] + groundEq.y * light_at_obj[2] + groundEq.z * light_at_obj[2] + groundEq.z + groundEq.w) * -1.0) / (lightVec1[0] + lightVec1[1] + lightVec1[2]);
-				GLfloat intersectPoint1[3] = { light_at_obj[0] + (lightVec1[0] * t1), light_at_obj[1] + (lightVec1[1] * t1), light_at_obj[2] + (lightVec1[2] * t1) };
-
-				double t2 = ((groundEq.x * light_at_obj[0] + groundEq.y * light_at_obj[2] + groundEq.z * light_at_obj[2] + groundEq.z + groundEq.w) * -1.0) / (lightVec2[0] + lightVec2[1] + lightVec2[2]);
-				GLfloat intersectPoint2[3] = { light_at_obj[0] + (lightVec2[0] * t2), light_at_obj[1] + (lightVec2[1] * t2), light_at_obj[2] + (lightVec2[2] * t2) };
-				*/
-
 				// Maximum Length Of Ray
 				float factor = 50;
 				GLfloat intersectPoint1[3] = { light_at_obj[0] + (lightVec1[0] * factor), light_at_obj[1] + (lightVec1[1] * factor), light_at_obj[2] + (lightVec1[2] * factor) };
 				GLfloat intersectPoint2[3] = { light_at_obj[0] + (lightVec2[0] * factor), light_at_obj[1] + (lightVec2[1] * factor), light_at_obj[2] + (lightVec2[2] * factor) };
 
-
-
-#pragma region debugFunc
-				/* // Draw Light Position
-				glColor3f(1.0, 0.0, 0.0);
-				glPushMatrix();
-				glTranslatef(lightPosV3.x, lightPosV3.y, lightPosV3.z);
-				glutSolidSphere(.5, 20, 20);
-				glPopMatrix();
-				*/
-
-				/* // Draw p1 Position
-				glColor3f(0.0, 1.0, 0.0);
-				glPushMatrix();
-				glTranslatef(p1.x, p1.y, p1.z);
-				glutSolidSphere(.5, 20, 20);
-				glPopMatrix();
-				*/
-
-				/* // Draw p2 Position
-				glColor3f(0.0, 1.0, 0.0);
-				glPushMatrix();
-				glTranslatef(p2.x, p2.y, p2.z);
-				glutSolidSphere(.5, 20, 20);
-				glPopMatrix();*/
-
-				/* // Draw intersectPoint1 Position
-				glColor3f(0.0, 0.0, 1.0);
-				glPushMatrix();
-				glTranslatef(intersectPoint1.x, intersectPoint1.y, intersectPoint1.z);
-				glutSolidSphere(.5, 20, 20);
-				glPopMatrix();
-				*/
-
-				/* // Draw intersectPoint2 Position
-				glColor3f(0.0, 0.0, 1.0);
-				glPushMatrix();
-				glTranslatef(intersectPoint2.x, intersectPoint2.y, intersectPoint2.z);
-				glutSolidSphere(.5, 20, 20);
-				glPopMatrix();
-				*/
-
-				if (DebugFlag == 2) {
+				if (DebugFlag == 0) {
+					// Setup Color For Debug
+					if (j == 0) {
+						glColor3f(0.0, 1.0, 0.0);
+					}
+					else if (j == 1) {
+						glColor3f(0.0, 0.0, 1.0);
+					}
+					else {
+						glColor3f(1.0, 0.0, 0.0);
+					}
+				}
+				else if (DebugFlag == 2) {
+					// Draw Light in Object Coordinate For Debug
 					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-					// Draw Triangle form lightPos, p1, p2
 					glDisable(GL_STENCIL_TEST);
 					glColor3f(1.0, 0.0, 0.0);
 					glPushMatrix();
@@ -363,57 +297,33 @@ void object_class::local_light(float* global_Light, const float* ObjectRotation,
 					glPopMatrix();
 					glEnable(GL_STENCIL_TEST);
 					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-				}
+				}				
 
-				// Setup Color For Debug
-				if (j == 0) {
-					glColor3f(0.0, 1.0, 0.0);
-				}
-				else if (j == 1) {
-					glColor3f(0.0, 0.0, 1.0);
-				}
-				else {
-					glColor3f(1.0, 0.0, 0.0);
-				}
-#pragma endregion
-
-				/* // Draw Triangle of Shadow Volume
-				glBegin(GL_TRIANGLES);
-				glVertex3f(p1[0], p1[1], p1[2]);
-				glVertex3f(p2[0], p2[1], p2[2]);
-				glVertex3f(intersectPoint1[0], intersectPoint1[1], intersectPoint1[2]);
-				glVertex3f(intersectPoint1[0], intersectPoint1[1], intersectPoint1[2]);
-				glVertex3f(p2[0], p2[1], p2[2]);
-				glVertex3f(intersectPoint2[0], intersectPoint2[1], intersectPoint2[2]);
-				glEnd();*/
-				
-
+				// Draw Shadow Volume Area
 				glPushMatrix();
-				//glLoadIdentity();
-
-				glBegin(GL_QUADS);
-
-				glVertex3f(p1[0], p1[1], p1[2]);
-				glVertex3f(p2[0], p2[1], p2[2]);
-				glVertex3f(intersectPoint2[0], intersectPoint2[1], intersectPoint2[2]);
-				glVertex3f(intersectPoint1[0], intersectPoint1[1], intersectPoint1[2]);
-				glEnd();
+					glBegin(GL_QUADS);
+						glVertex3f(p1[0], p1[1], p1[2]);
+						glVertex3f(p2[0], p2[1], p2[2]);
+						glVertex3f(intersectPoint2[0], intersectPoint2[1], intersectPoint2[2]);
+						glVertex3f(intersectPoint1[0], intersectPoint1[1], intersectPoint1[2]);
+					glEnd();
 				glPopMatrix();
-
-
 
 			} // End of j-Loop
 		} // End of Count-Loop
 	} // End of i-Loop
 
-	glPopMatrix();
+
+	// Restore parameters	
 	glFrontFace(GL_CCW);
 
 	glEnable(GL_LIGHTING);
 
 	glDepthMask(true);
+	
 	glStencilMask(0x00);
 	glDisable(GL_STENCIL_TEST);
+	
 	glDisable(GL_LIGHTING);
 
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);

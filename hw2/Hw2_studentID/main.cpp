@@ -49,12 +49,12 @@ namespace{
 	image_class* image;
 
 	bool shadow_mode = true;
-	int debug_mode = 0;
+	int debug_mode = 1;
 }
 
-void DrawGLRoom()										// Draw The Room (Box)
-{
-	
+void DrawGLRoom()										
+{	
+	// Draw The Room (Box)
 	glDisable(GL_LIGHTING);
 	glColor3d(1.0,1.0,1.0);
 	glEnable(GL_TEXTURE_2D);
@@ -198,10 +198,9 @@ void init()
 }
 
 void idle(){
-	//printf("idle\n");
 	glutPostRedisplay();
 }
-//---------負責視窗及繪圖內容的比例---------
+
 void WindowSize(int w, int h)
 {
 	printf("目前視窗大小為%d X %d\n", w, h);
@@ -219,7 +218,6 @@ void WindowSize(int w, int h)
 	glLoadIdentity();
 }
 
-//---------獲取鍵盤輸入---------
 void Keyboard(unsigned char key, int x, int y)
 {
 	printf("你所按按鍵的碼是%x\t此時視窗內的滑鼠座標是(%d,%d)\n", key, x, y);
@@ -271,10 +269,9 @@ void Keyboard(unsigned char key, int x, int y)
 	Camera_Pos_[2] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::sin(radians(CameraYaw));
 	Camera_Pos_[1] = CameraDistance * glm::cos(radians(CameraPitch));
 
-	cout << "Distance = ," << CameraDistance;
-	cout << "Yaw = ," << CameraYaw;
-	cout << "Pitch = " << CameraPitch << endl;
-
+	cout << "Distance = " << CameraDistance;
+	cout << ",Yaw = " << CameraYaw;
+	cout << ",Pitch = " << CameraPitch << endl;
 
 	if(key==0x20) std::cout<<"light pos:"<<LightPos[0]<<'\t'<<LightPos[1]<<'\t'<<LightPos[2]<<'\n'; //space
 
@@ -285,23 +282,6 @@ void Keyboard(unsigned char key, int x, int y)
 		}
 	}
 
-}
-
-void DrawObjects(int count)
-{
-	if (count > 3) count = 3;
-
-	for (int i = 0; i < count; i++) {
-		
-		glPushMatrix();
-		glScalef(obj_ptr[i]->scale[0], obj_ptr[i]->scale[1], obj_ptr[i]->scale[2]);
-		glTranslatef(obj_ptr[i]->position[0], obj_ptr[i]->position[1], obj_ptr[i]->position[2]);
-		glRotatef(obj_ptr[i]->rotation[0], 1, 0, 0);
-		glRotatef(obj_ptr[i]->rotation[1], 0, 1, 0);
-		glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);
-		obj_ptr[i]->draw(); //draw the objects
-		glPopMatrix();
-	}
 }
 
 void DrawObjectsStencil(int count)
@@ -325,8 +305,8 @@ void DrawObjectsStencil(int count)
 		glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);
 
 		glPushMatrix();
-			//glTranslatef(-obj_ptr[i]->position[0], -obj_ptr[i]->position[1], -obj_ptr[i]->position[2]);
-			obj_ptr[i]->local_light(LightPos, ObjectRotation, debug_mode); //draw the objects
+			// Draw Object's shadow volume with stencil test
+			obj_ptr[i]->Stencil(LightPos, ObjectRotation, debug_mode);
 		glPopMatrix();
 		
 	}
@@ -334,27 +314,32 @@ void DrawObjectsStencil(int count)
 
 void DrawAll()
 {
-	glPushMatrix();//重設為單位矩陣，畫房間
+	glPushMatrix();												//重設為單位矩陣，畫房間
 	DrawGLRoom();
 	glPopMatrix();
 
-	glPushMatrix();//重設為單位矩陣，畫小球
+	glPushMatrix();												//重設為單位矩陣，畫小球
 	glTranslated(BarrierPos[0], BarrierPos[1], BarrierPos[2]);
-	glutSolidSphere(1.0, 16, 16);//小球，只是個障礙物
+	glutSolidSphere(1.0, 16, 16);								//小球，只是個障礙物
 	glPopMatrix();
-
-	glPushMatrix();
-		DrawObjects(3);
-	glPopMatrix();
+	
+	for (int i = 0; i < 3; i++) {
+		glPushMatrix();
+			glScalef(obj_ptr[i]->scale[0], obj_ptr[i]->scale[1], obj_ptr[i]->scale[2]);
+			glTranslatef(obj_ptr[i]->position[0], obj_ptr[i]->position[1], obj_ptr[i]->position[2]);
+			glRotatef(obj_ptr[i]->rotation[0], 1, 0, 0);
+			glRotatef(obj_ptr[i]->rotation[1], 0, 1, 0);
+			glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);
+			obj_ptr[i]->draw(); //draw the objects
+		glPopMatrix();
+	}
 }
 
 void DrawShadow(double *CameraPos)
 {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glCullFace(GL_FRONT);
-
+	
 	glDepthMask(GL_FALSE);
 	glDisable(GL_DEPTH_TEST);
 
@@ -363,11 +348,17 @@ void DrawShadow(double *CameraPos)
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 	glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
 
+	glDisable(GL_LIGHTING);
+
+	// Cull Back Cause we place camera in sphere 
+	glCullFace(GL_FRONT);
+	
+	// Draw Sphere
 	glPushMatrix();
-	glLoadIdentity();
-	glTranslatef(CameraPos[0], CameraPos[1], CameraPos[2]);
-	glColor4f(0.0, 0.0, 0.0, 0.5);
-	glutSolidSphere(0.01, 20, 20);
+		glLoadIdentity();
+		glTranslatef(CameraPos[0], CameraPos[1], CameraPos[2]);
+		glColor4f(0.0, 0.0, 0.0, 0.5);
+		glutSolidSphere(0.01, 20, 20);
 	glPopMatrix();
 
 	// Restore parameters
@@ -380,19 +371,19 @@ void DrawShadow(double *CameraPos)
 	glEnable(GL_DEPTH_TEST);
 
 	glEnable(GL_LIGHTING);
+
+	glDisable(GL_BLEND);
 }
 
 //---------描繪畫面---------
 void Display(void)
 {
-	glEnable(GL_STENCIL_BUFFER_BIT);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);	//清理緩衝區
-	glDisable(GL_STENCIL_BUFFER_BIT);
-
-	glClearColor(0.0, 0.0, 0.0, 1.0);
-	glLightfv(GL_LIGHT1, GL_POSITION, LightPos);// Set Light1 Position
 	
-	glMatrixMode(GL_PROJECTION);					//選擇投影矩陣模式
+	glClearColor(0.0, 0.0, 0.0, 1.0);
+	glLightfv(GL_LIGHT1, GL_POSITION, LightPos);		// Set Light1 Position
+	
+	glMatrixMode(GL_PROJECTION);						//選擇投影矩陣模式
 	glLoadIdentity();
 	gluPerspective(45.0f, (GLfloat)width / (GLfloat)height, 0.001f, 100.0f);	
 	gluLookAt(Camera_Pos_[0], Camera_Pos_[1], Camera_Pos_[2], 0, 0, 0, 0, 1, 0);
@@ -410,20 +401,21 @@ void Display(void)
 		DrawObjectsStencil(3);
 	glPopMatrix();
 
-	if(shadow_mode){
-		/* Draw Shadow */
+	/* Draw Shadow */
+	if(shadow_mode)
+	{		
 		glPushMatrix();
 			DrawShadow(Camera_Pos_);
 		glPopMatrix();
 	}
 		
 	//單純讓使用者知道光源在哪
-	glLoadIdentity();//重置，畫光
+	glLoadIdentity();										//重置，畫光
 	glTranslatef(LightPos[0], LightPos[1], LightPos[2]);
 	glColor4f(0.0f, 0.6f, 1.0f, 1.0f);
 	glDisable(GL_LIGHTING);
 	glDepthMask(GL_FALSE);
-	gluSphere(q, 0.1f, 16, 8);//光
+	gluSphere(q, 0.1f, 16, 8);								//光
 	glEnable(GL_LIGHTING);
 	glDepthMask(GL_TRUE);	
 
@@ -433,7 +425,7 @@ void Display(void)
 		obj_ptr[i]->rotation[2]+=obj_ptr[i]->rotate_speed[2];
 	}
 
-	glutSwapBuffers();								//更新畫面
+	glutSwapBuffers();										//更新畫面
 }
 
 int main()
@@ -441,7 +433,7 @@ int main()
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_STENCIL);		//描繪模式使用雙緩衝區以及紅綠藍Alpha顏色順序
 	glutInitWindowSize(600, 600);					//視窗長寬
 	glutInitWindowPosition(300, 200);				//視窗左上角的位置
-	glutCreateWindow("HW2_shadow_0556652");		//建立視窗並打上標題
+	glutCreateWindow("HW2_shadow_0556652");			//建立視窗並打上標題
 	init();
 													//下面三個與Callback函式有關
 	glutReshapeFunc(WindowSize);					//當視窗改變大小時會獲取新的視窗長寬
