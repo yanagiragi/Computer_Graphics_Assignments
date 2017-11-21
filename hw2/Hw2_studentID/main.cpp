@@ -19,12 +19,12 @@ using namespace glm;
 
 namespace{
 	//const double CamaraPos[]={1.5, 0.5 ,18.0};
-	double CamaraPos[]={2.0, 1.0 ,18.0};
+	double Camera_Pos_[]={2.0, 1.0 ,18.0};
 	const double BarrierPos[]={-2.0,-2.0,-0.5};
 
-	double CameraDistance = sqrtf(CamaraPos[0] * CamaraPos[0] + CamaraPos[1] * CamaraPos[1] + CamaraPos[2] * CamaraPos[2]);
-	double CameraPitch = glm::degrees(glm::asin(CamaraPos[2] / CameraDistance));
-	double CameraYaw = glm::degrees(glm::acos(CamaraPos[1] / (CameraDistance * glm::sin((CameraPitch)))));;
+	double CameraDistance = sqrtf(Camera_Pos_[0] * Camera_Pos_[0] + Camera_Pos_[1] * Camera_Pos_[1] + Camera_Pos_[2] * Camera_Pos_[2]);
+	double CameraPitch = glm::degrees(glm::asin(Camera_Pos_[2] / CameraDistance));
+	double CameraYaw = glm::degrees(glm::acos(Camera_Pos_[1] / (CameraDistance * glm::sin((CameraPitch)))));;
 	
 	int width;
 	int height;
@@ -148,9 +148,9 @@ void init()
 	CameraYaw = 428.655;
 
 	// ReCalculate Camera
-	CamaraPos[0] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::cos(radians(CameraYaw));
-	CamaraPos[2] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::sin(radians(CameraYaw));
-	CamaraPos[1] = CameraDistance * glm::cos(radians(CameraPitch));
+	Camera_Pos_[0] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::cos(radians(CameraYaw));
+	Camera_Pos_[2] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::sin(radians(CameraYaw));
+	Camera_Pos_[1] = CameraDistance * glm::cos(radians(CameraPitch));
 
 	glShadeModel(GL_SMOOTH);
 	q = gluNewQuadric();
@@ -214,7 +214,7 @@ void WindowSize(int w, int h)
 	glLoadIdentity();
 	// Calculate The Aspect Ratio Of The Window
 	gluPerspective(45.0f, (GLfloat)w / (GLfloat)h, 0.001f, 100.0f);
-	gluLookAt(CamaraPos[0], CamaraPos[1], CamaraPos[2], 0, 0, 0, 0, 1, 0);				//螢幕鏡頭的座標及方向
+	gluLookAt(Camera_Pos_[0], Camera_Pos_[1], Camera_Pos_[2], 0, 0, 0, 0, 1, 0);				//螢幕鏡頭的座標及方向
 	glMatrixMode(GL_MODELVIEW);						//model模式最常用，沒事就切回這個模式
 	glLoadIdentity();
 }
@@ -267,9 +267,9 @@ void Keyboard(unsigned char key, int x, int y)
 	if (key == 0x72) { CameraPitch += CameraSpeed; } // r
 	if (key == 0x79) { CameraPitch -= CameraSpeed; } // y
 
-	CamaraPos[0] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::cos(radians(CameraYaw));
-	CamaraPos[2] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::sin(radians(CameraYaw));
-	CamaraPos[1] = CameraDistance * glm::cos(radians(CameraPitch));
+	Camera_Pos_[0] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::cos(radians(CameraYaw));
+	Camera_Pos_[2] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::sin(radians(CameraYaw));
+	Camera_Pos_[1] = CameraDistance * glm::cos(radians(CameraPitch));
 
 	cout << "Distance = ," << CameraDistance;
 	cout << "Yaw = ," << CameraYaw;
@@ -291,7 +291,6 @@ void DrawObjects(int count)
 {
 	if (count > 3) count = 3;
 
-	//for (int i = 2; i < 3; i++) {
 	for (int i = 0; i < count; i++) {
 		
 		glPushMatrix();
@@ -326,7 +325,10 @@ void DrawObjectsStencil(int count)
 		glRotatef(obj_ptr[i]->rotation[1], 0, 1, 0);
 		glRotatef(obj_ptr[i]->rotation[2], 0, 0, 1);
 
-		obj_ptr[i]->local_light(LightPos, ObjectRotation, debug_mode); //draw the objects
+		glPushMatrix();
+			//glTranslatef(-obj_ptr[i]->position[0], -obj_ptr[i]->position[1], -obj_ptr[i]->position[2]);
+			obj_ptr[i]->local_light(LightPos, ObjectRotation, debug_mode); //draw the objects
+		glPopMatrix();
 		
 	}
 }
@@ -345,10 +347,38 @@ void DrawAll()
 	DrawObjects(3);
 }
 
-void DrawShadow(int count)
+void DrawShadow(double *CameraPos)
 {
-	for(int i = 0; i < count; ++i)
-		obj_ptr[i]->draw_shadow_poly(CamaraPos, CameraYaw);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glCullFace(GL_FRONT);
+
+	glDepthMask(GL_FALSE);
+	glDisable(GL_DEPTH_TEST);
+
+	glEnable(GL_STENCIL_TEST);
+	glStencilMask(0x00);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
+
+	glPushMatrix();
+	glLoadIdentity();
+	glTranslatef(CameraPos[0], CameraPos[1], CameraPos[2]);
+	glColor4f(0.0, 0.0, 0.0, 0.5);
+	glutSolidSphere(0.01, 20, 20);
+	glPopMatrix();
+
+	// Restore parameters
+	glCullFace(GL_BACK);
+
+	glDisable(GL_STENCIL_TEST);
+	glStencilMask(0xFF);
+
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
+
+	glEnable(GL_LIGHTING);
 }
 
 //---------描繪畫面---------
@@ -364,7 +394,7 @@ void Display(void)
 	glMatrixMode(GL_PROJECTION);					//選擇投影矩陣模式
 	glLoadIdentity();
 	gluPerspective(45.0f, (GLfloat)width / (GLfloat)height, 0.001f, 100.0f);	
-	gluLookAt(CamaraPos[0], CamaraPos[1], CamaraPos[2], 0, 0, 0, 0, 1, 0);
+	gluLookAt(Camera_Pos_[0], Camera_Pos_[1], Camera_Pos_[2], 0, 0, 0, 0, 1, 0);
 	
 	glMatrixMode(GL_MODELVIEW);	
 	glLoadIdentity();
@@ -376,13 +406,13 @@ void Display(void)
 
 	/* Stencil Test */
 	glPushMatrix();		
-		DrawObjectsStencil(1);
+		DrawObjectsStencil(3);
 	glPopMatrix();
 
 	if(shadow_mode){
 		/* Draw Shadow */
 		glPushMatrix();
-			DrawShadow(1);
+			DrawShadow(Camera_Pos_);
 		glPopMatrix();
 	}
 		
@@ -410,7 +440,7 @@ int main()
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_STENCIL);		//描繪模式使用雙緩衝區以及紅綠藍Alpha顏色順序
 	glutInitWindowSize(600, 600);					//視窗長寬
 	glutInitWindowPosition(300, 200);				//視窗左上角的位置
-	glutCreateWindow("HW2_shadow_studentID");		//建立視窗並打上標題
+	glutCreateWindow("HW2_shadow_0556652");		//建立視窗並打上標題
 	init();
 													//下面三個與Callback函式有關
 	glutReshapeFunc(WindowSize);					//當視窗改變大小時會獲取新的視窗長寬
