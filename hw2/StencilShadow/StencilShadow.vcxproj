@@ -11,8 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{24B97F10-8E76-4EA2-B78E-9D6FD83F494E}</ProjectGuid>
+    <ProjectGuid>{E767E32A-5514-40B5-A84E-27C0B323E34E}</ProjectGuid>
     <RootNamespace>Hw2_studentID</RootNamespace>
+    <ProjectName>StencilShadow</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
