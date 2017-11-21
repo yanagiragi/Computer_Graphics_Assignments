@@ -144,8 +144,8 @@ void init()
 {
 	glClearColor(0.0, 0.0, 0.0, 1.0);				//指定使用不透明黑色清背景
 	
-	CameraPitch = 58.9187;
-	CameraYaw = 428.655;
+	CameraPitch = 89.9187;
+	CameraYaw = 449.655;
 
 	// ReCalculate Camera
 	Camera_Pos_[0] = CameraDistance * glm::sin(radians(CameraPitch)) * glm::cos(radians(CameraYaw));
@@ -311,7 +311,6 @@ void DrawObjectsStencil(int count)
 	GLfloat ObjectRotation[3];
 
 	for (int i = 0; i < count; i++) {
-
 		glLoadIdentity();
 
 		// Setup ObjectRotation
@@ -344,7 +343,9 @@ void DrawAll()
 	glutSolidSphere(1.0, 16, 16);//小球，只是個障礙物
 	glPopMatrix();
 
-	DrawObjects(3);
+	glPushMatrix();
+		DrawObjects(3);
+	glPopMatrix();
 }
 
 void DrawShadow(double *CameraPos)
@@ -405,7 +406,7 @@ void Display(void)
 	glPopMatrix();
 
 	/* Stencil Test */
-	glPushMatrix();		
+	glPushMatrix();
 		DrawObjectsStencil(3);
 	glPopMatrix();
 

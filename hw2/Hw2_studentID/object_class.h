@@ -10,7 +10,7 @@
 using namespace std;
 using namespace glm;
 
-unsigned int gggdata[800][600];
+//unsigned int gggdata[800][600];
 
 class object_class
 {
@@ -178,9 +178,13 @@ void object_class::local_light(float* global_Light, const float* ObjectRotation,
 	GLfloat ObjectRotation_M[16];
 	glPushMatrix();
 	glLoadIdentity();
+	
 	glRotatef(-ObjectRotation[2], 0, 0, 1);
 	glRotatef(-ObjectRotation[1], 0, 1, 0);
 	glRotatef(-ObjectRotation[0], 1, 0, 0);
+	glTranslatef(-position[0], -position[1], -position[2]);
+	glScalef(1.0/scale[0], 1.0/scale[1], 1.0/scale[2]);
+
 	glGetFloatv(GL_MODELVIEW_MATRIX, ObjectRotation_M);
 	glPopMatrix();
 
@@ -348,14 +352,18 @@ void object_class::local_light(float* global_Light, const float* ObjectRotation,
 				glPopMatrix();
 				*/
 
-				/* // Draw Triangle form lightPos, p1, p2
-				glColor3f(1.0, 1.0, 0.0);
-				glBegin(GL_TRIANGLES);
-				glVertex3f(lightPosV3.x, lightPosV3.y, lightPosV3.z);
-				glVertex3f(p1.x, p1.y, p1.z);
-				glVertex3f(p2.x, p2.y, p2.z);
-				glEnd();
-				*/
+				if (DebugFlag == 2) {
+					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+					// Draw Triangle form lightPos, p1, p2
+					glDisable(GL_STENCIL_TEST);
+					glColor3f(1.0, 0.0, 0.0);
+					glPushMatrix();
+					glTranslatef(light_at_obj[0], light_at_obj[1], light_at_obj[2]);
+					glutSolidSphere(.5, 20, 20);
+					glPopMatrix();
+					glEnable(GL_STENCIL_TEST);
+					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+				}
 
 				// Setup Color For Debug
 				if (j == 0) {
@@ -369,8 +377,8 @@ void object_class::local_light(float* global_Light, const float* ObjectRotation,
 				}
 #pragma endregion
 
-				// Draw Triangle of Shadow Volume
-				/*glBegin(GL_TRIANGLES);
+				/* // Draw Triangle of Shadow Volume
+				glBegin(GL_TRIANGLES);
 				glVertex3f(p1[0], p1[1], p1[2]);
 				glVertex3f(p2[0], p2[1], p2[2]);
 				glVertex3f(intersectPoint1[0], intersectPoint1[1], intersectPoint1[2]);
@@ -378,6 +386,7 @@ void object_class::local_light(float* global_Light, const float* ObjectRotation,
 				glVertex3f(p2[0], p2[1], p2[2]);
 				glVertex3f(intersectPoint2[0], intersectPoint2[1], intersectPoint2[2]);
 				glEnd();*/
+				
 
 				glPushMatrix();
 				//glLoadIdentity();
