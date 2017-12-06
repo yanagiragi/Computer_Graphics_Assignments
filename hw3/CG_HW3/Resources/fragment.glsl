@@ -29,15 +29,11 @@ void main()
 
 	vec4 albedo = texture2D(mainTex, uv);
 
-	vec3 diffuse = _LightColor0.rgb * _Diffuse.rgb * max(0, dot(nWorldNormal, nWorldLight));
+	vec3 diffuse = _LightColor0.rgb * _Diffuse.rgb * albedo.rgb * max(0, dot(nWorldNormal, nWorldLight));
 				
 	vec3 specular = _LightColor0.rgb * _Specular.rgb * pow(max(0, dot(viewDirection, reflectDirection)), _Gloss);
 
 	vec3 color = diffuse + specular;
 
 	FragColor = vec4(color, 1.0);
-
-	//vec4 Red = vec4(1.0, 0.0, 0.0, 1.0);
-	
-	//FragColor = Red;
 }
