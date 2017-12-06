@@ -23,6 +23,7 @@
 #include "../shader_lib/shader.h"
 #include "glm/glm.h"
 
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <vector>
 #include <sstream>
@@ -246,7 +247,7 @@ int main(int argc, char *argv[])
 
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 	//remember to replace "YourStudentID" with your own student ID
-	glutCreateWindow("CG_HW1_YourStudentID");
+	glutCreateWindow("CG_HW3_0556652");
 	glutReshapeWindow(512, 512);
 
 	glewInit();
@@ -426,42 +427,62 @@ void init(void) {
 
 	InitBuffer();
 }
-/*
+
 glm::mat4 getV()
 {
+	glm::vec3 cameraPos = glm::vec3(eyex, eyey, eyez);
+	glm::vec3 cameraFront = glm::vec3(cos(eyet*M_PI / 180)*cos(eyep*M_PI / 180), sin(eyet*M_PI / 180), -1.0 * cos(eyet*M_PI / 180)*sin(eyep*M_PI / 180));
+	glm::vec3 cameraRight = glm::vec3(0.0, 1.0, 0.0);
 	return glm::lookAt(cameraPos, cameraPos + cameraFront, cameraRight);
+	//gluLookAt(eyex, eyey, eyez, eyex + cos(eyet*M_PI / 180)*cos(eyep*M_PI / 180), eyey + sin(eyet*M_PI / 180), eyez - cos(eyet*M_PI / 180)*sin(eyep*M_PI / 180), 0.0, 1.0, 0.0);
 }
 
 glm::mat4 getP()
 {
-	return glm::perspective(glm::radians(fov), aspect_ratio, nearPlane, farPlane);
-}*/
+	float fov = 45.0f;
+	float aspect = 1.0 / 1.0f;
+	float nearDistance = 0.1f;
+	float farDistance = 1000.0f;
+	return glm::perspective(glm::radians(fov), aspect, nearDistance, farDistance);
+}
 
 void display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	//you may need to do somting here(declare some local variables you need and maybe load inverse Model matrix here...)
-
-	//please try not to modify the following block of code(you can but you are not supposed to)
-	glMatrixMode(GL_MODELVIEW);
-	
-	glLoadIdentity();
-	gluLookAt(eyex, eyey, eyez,eyex+cos(eyet*M_PI/180)*cos(eyep*M_PI / 180), eyey+sin(eyet*M_PI / 180), eyez-cos(eyet*M_PI / 180)*sin(eyep*M_PI / 180),0.0, 1.0, 0.0);
-
-	draw_light_bulb();
 	
 	glPushMatrix();
-		glTranslatef(ball_pos[0], ball_pos[1], ball_pos[2]);
-		glRotatef(ball_rot[0], 1, 0, 0);
-		glRotatef(ball_rot[1], 0, 1, 0);
-		glRotatef(ball_rot[2], 0, 0, 1);
-		//please try not to modify the previous block of code
-
-		//you may need to do something here(pass the uniform variable to shader and render the model)
-		glmDraw(model,GLM_TEXTURE);//please delete this line in your final code! It's just a preview of rendered object
-
+		glUseProgram(0);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		gluLookAt(eyex, eyey, eyez,eyex+cos(eyet*M_PI/180)*cos(eyep*M_PI / 180), eyey+sin(eyet*M_PI / 180), eyez-cos(eyet*M_PI / 180)*sin(eyep*M_PI / 180),0.0, 1.0, 0.0);
+		draw_light_bulb();
 	glPopMatrix();
+
+	/*
+		glPushMatrix();
+			glLoadIdentity();
+			glTranslatef(ball_pos[0], ball_pos[1], ball_pos[2]);
+			glRotatef(ball_rot[0], 1, 0, 0);
+			glRotatef(ball_rot[1], 0, 1, 0);
+			glRotatef(ball_rot[2], 0, 0, 1);
+			glmDraw(model, GLM_TEXTURE);//please delete this line in your final code! It's just a preview of rendered object
+		glPopMatrix();
+	*/
+
+	glUseProgram(shaderProgram);
+
+	glm::mat4 MVP;
+	glm::mat4 M(1.0f);
+	M = glm::translate(M, vec3(ball_pos[0], ball_pos[1], ball_pos[2]));
+	M = glm::rotate(M, ball_rot[0], vec3(1, 0, 0));
+	M = glm::rotate(M, ball_rot[1], vec3(0, 1, 0));
+	M = glm::rotate(M, ball_rot[2], vec3(0, 0, 1));
+
+	MVP = getP() * getV() * M;
+	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "MVP"), 1, GL_FALSE, &MVP[0][0]);
+
+	glBindVertexArray(VAO);
+	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
 	glutSwapBuffers();
 	camera_light_ball_move();
