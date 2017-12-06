@@ -53,19 +53,6 @@ struct Vertex
 };
 typedef struct Vertex Vertex;
 
-//no need to modify the following function declarations and gloabal variables
-void init(void);
-void display(void);
-void reshape(int width, int height);
-void keyboard(unsigned char key, int x, int y);
-void keyboardup(unsigned char key, int x, int y);
-void motion(int x, int y);
-void mouse(int button, int state, int x, int y);
-void idle(void);
-void draw_light_bulb(void);
-void camera_light_ball_move();
-GLuint load_normal_map(char* name);
-
 namespace
 {
 	char *obj_file_dir = "../Resources/Ball.obj";
@@ -107,8 +94,9 @@ namespace
 //you can modify the moving/rotating speed if it's too fast/slow for you
 const float speed = 0.005;//camera/light/ball moving speed
 const float rotation_speed = 0.05;//ball rotation speed
-//you may need to use some of the following variables in your program 
-GLuint normalTextureID;//TA has already loaded the normal texture for you
+								  //you may need to use some of the following variables in your program 
+GLuint TextureID;	//TA has already loaded the normal texture for you
+GLuint normalTextureID;	//TA has already loaded the normal texture for you
 GLMmodel *model;//TA has already loaded the model for you(!but you still need to convert it to VBO(s)!)
 float eyex = 0.0;
 float eyey = 0.0;
@@ -120,6 +108,130 @@ GLfloat normalWid, normalHei;
 
 std::vector<struct Vertex> vertices;
 std::vector<unsigned int> indices;
+//no need to modify the following function declarations and gloabal variables
+void init(void);
+void display(void);
+void reshape(int width, int height);
+void keyboard(unsigned char key, int x, int y);
+void keyboardup(unsigned char key, int x, int y);
+void motion(int x, int y);
+void mouse(int button, int state, int x, int y);
+void idle(void);
+void draw_light_bulb(void);
+void camera_light_ball_move();
+GLuint load_normal_map(char* name);
+
+struct Image {
+	unsigned long sizeX;
+	unsigned long sizeY;
+	char *data;
+};
+typedef struct Image Image;
+
+// 24-bit bmp loading function, no need to modify it
+int ImageLoad(char *filename, Image *image)
+{
+	FILE *file;
+	unsigned long size; // size of the image in bytes.
+	unsigned long i; // standard counter.
+	unsigned short int planes; // number of planes in image (must be 1)
+	unsigned short int bpp; // number of bits per pixel (must be 24)
+	char temp; // temporary color storage for bgr-rgb conversion.
+			   // make sure the file is there.
+	if ((file = fopen(filename, "rb")) == NULL) {
+		printf("File Not Found : %s\n", filename);
+		return 0;
+	}
+
+	// seek through the bmp header, up to the width/height:
+	fseek(file, 18, SEEK_CUR);
+	// read the width
+	if ((i = fread(&image->sizeX, 4, 1, file)) != 1) {
+		printf("Error reading width from %s.\n", filename);
+		return 0;
+	}
+
+	//printf("Width of %s: %lu\n", filename, image->sizeX);
+	// read the height
+	if ((i = fread(&image->sizeY, 4, 1, file)) != 1) {
+		printf("Error reading height from %s.\n", filename);
+		return 0;
+	}
+	//printf("Height of %s: %lu\n", filename, image->sizeY);
+	// calculate the size (assuming 24 bits or 3 bytes per pixel).
+	size = image->sizeX * image->sizeY * 3;
+	// read the planes
+	if ((fread(&planes, 2, 1, file)) != 1) {
+		printf("Error reading planes from %s.\n", filename);
+		return 0;
+	}
+	if (planes != 1) {
+		printf("Planes from %s is not 1: %u\n", filename, planes);
+		return 0;
+	}
+	// read the bitsperpixel
+	if ((i = fread(&bpp, 2, 1, file)) != 1) {
+		printf("Error reading bpp from %s.\n", filename);
+		return 0;
+	}
+	if (bpp != 24) {
+		printf("Bpp from %s is not 24: %u\n", filename, bpp);
+		return 0;
+	}
+	// seek past the rest of the bitmap header.
+	fseek(file, 24, SEEK_CUR);
+	// read the data.
+	image->data = (char *)malloc(size);
+	if (image->data == NULL) {
+		printf("Error allocating memory for color-corrected image data");
+		return 0;
+	}
+	if ((i = fread(image->data, size, 1, file)) != 1) {
+		printf("Error reading image data from %s.\n", filename);
+		return 0;
+	}
+	for (i = 0; i<size; i += 3) {
+		// reverse all of the colors. (bgr -> rgb)
+		temp = image->data[i];
+		image->data[i] = image->data[i + 2];
+		image->data[i + 2] = temp;
+	}
+	// we're done.
+	return 1;
+}
+Image *LoadTexture(char *filename)
+{
+	Image *image;
+	// allocate space for texture
+	image = (Image *)malloc(sizeof(Image));
+	if (image == NULL) {
+		printf("Error allocating space for image");
+		getchar();
+		exit(0);
+	}
+	if (!ImageLoad(filename, image)) {
+		getchar();
+		exit(1);
+	}
+	return image;
+}
+
+void InitTexture()
+{
+	// GLuint textureID;
+	glGenTextures(1, &TextureID);
+
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D, TextureID);
+
+	Image* texture = LoadTexture("../Resources/Tile.bmp");
+
+	// Give the image to OpenGL
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture->sizeX, texture->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, texture->data);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+}
 
 template<typename Out> void split(const std::string &s, char delim, Out result) {
 	std::stringstream ss(s);
@@ -421,6 +533,8 @@ void init(void) {
 
 	//you may need to do somting here(create shaders/program(s) and create vbo(s)/vao from GLMmodel model)
 
+	InitTexture();
+
 	LoadObj(obj_file_dir);
 
 	InitShader();
@@ -440,7 +554,7 @@ glm::mat4 getV()
 glm::mat4 getP()
 {
 	float fov = 45.0f;
-	float aspect = 1.0 / 1.0f;
+	float aspect = 1.0 / 1.0f; // since window is (512, 512)
 	float nearDistance = 0.1f;
 	float farDistance = 1000.0f;
 	return glm::perspective(glm::radians(fov), aspect, nearDistance, farDistance);
@@ -459,6 +573,7 @@ void display(void)
 	glPopMatrix();
 
 	/*
+		// Original Way
 		glPushMatrix();
 			glLoadIdentity();
 			glTranslatef(ball_pos[0], ball_pos[1], ball_pos[2]);
@@ -471,16 +586,28 @@ void display(void)
 
 	glUseProgram(shaderProgram);
 
-	glm::mat4 MVP;
+	// glm::mat4 MVP;
 	glm::mat4 M(1.0f);
 	M = glm::translate(M, vec3(ball_pos[0], ball_pos[1], ball_pos[2]));
 	M = glm::rotate(M, ball_rot[0], vec3(1, 0, 0));
 	M = glm::rotate(M, ball_rot[1], vec3(0, 1, 0));
 	M = glm::rotate(M, ball_rot[2], vec3(0, 0, 1));
 
-	MVP = getP() * getV() * M;
-	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "MVP"), 1, GL_FALSE, &MVP[0][0]);
+	//MVP = getP() * getV() * M;
+	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "M"), 1, GL_FALSE, &M[0][0]);
+	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "V"), 1, GL_FALSE, &getV()[0][0]);
+	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "P"), 1, GL_FALSE, &getP()[0][0]);
 
+	glUniform3f(glGetUniformLocation(shaderProgram, "lightPos"), light_pos[0], light_pos[1], light_pos[2]);
+	glUniform3f(glGetUniformLocation(shaderProgram, "CameraPos"), eyex, eyey, eyez);
+	glm::vec4 worldpos = M * glm::vec4(0.0);
+	glUniform3f(glGetUniformLocation(shaderProgram, "WorldPos"), worldpos[0], worldpos[1], worldpos[2]);
+
+	GLint loc = glGetUniformLocation(shaderProgram, "mainTex");
+	glActiveTexture(GL_TEXTURE0 + 0);
+	glBindTexture(GL_TEXTURE_2D, TextureID);	
+	glUniform1i(loc, 0);
+	
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
@@ -490,174 +617,174 @@ void display(void)
 
 //please implement bump mapping toggle(enable/disable bump mapping) in case 'b'(lowercase)
 void keyboard(unsigned char key, int x, int y) {
-	switch (key) {
-	case 27:
-	{	//ESC
-		break;
-	}
-	case 'b'://toggle bump mapping
-	{
-		//you may need to do somting here
-		break;
-	}
-	case 'd':
-	{
-		right = true;
-		break;
-	}
-	case 'a':
-	{
-		left = true;
-		break;
-	}
-	case 'w':
-	{
-		forward = true;
-		break;
-	}
-	case 's':
-	{
-		backward = true;
-		break;
-	}
-	case 'q':
-	{
-		up = true;
-		break;
-	}
-	case 'e':
-	{
-		down = true;
-		break;
-	}
-	case 't':
-	{
-		lforward = true;
-		break;
-	}
-	case 'g':
-	{
-		lbackward = true;
-		break;
-	}
-	case 'h':
-	{
-		lright = true;
-		break;
-	}
-	case 'f':
-	{
-		lleft = true;
-		break;
-	}
-	case 'r':
-	{
-		lup = true;
-		break;
-	}
-	case 'y':
-	{
-		ldown = true;
-		break;
-	}
-	case 'i':
-	{
-		bforward = true;
-		break;
-	}
-	case 'k':
-	{
-		bbackward = true;
-		break;
-	}
-	case 'l':
-	{
-		bright = true;
-		break;
-	}
-	case 'j':
-	{
-		bleft = true;
-		break;
-	}
-	case 'u':
-	{
-		bup = true;
-		break;
-	}
-	case 'o':
-	{
-		bdown = true;
-		break;
-	}
-	case '7':
-	{
-		bx = true;
-		break;
-	}
-	case '8':
-	{
-		by = true;
-		break;
-	}
-	case '9':
-	{
-		bz = true;
-		break;
-	}
-	case '4':
-	{
-		brx = true;
-		break;
-	}
-	case '5':
-	{
-		bry = true;
-		break;
-	}
-	case '6':
-	{
-		brz = true;
-		break;
-	}
+		switch (key) {
+		case 27:
+		{	//ESC
+			break;
+		}
+		case 'b'://toggle bump mapping
+		{
+			//you may need to do somting here
+			break;
+		}
+		case 'd':
+		{
+			right = true;
+			break;
+		}
+		case 'a':
+		{
+			left = true;
+			break;
+		}
+		case 'w':
+		{
+			forward = true;
+			break;
+		}
+		case 's':
+		{
+			backward = true;
+			break;
+		}
+		case 'q':
+		{
+			up = true;
+			break;
+		}
+		case 'e':
+		{
+			down = true;
+			break;
+		}
+		case 't':
+		{
+			lforward = true;
+			break;
+		}
+		case 'g':
+		{
+			lbackward = true;
+			break;
+		}
+		case 'h':
+		{
+			lright = true;
+			break;
+		}
+		case 'f':
+		{
+			lleft = true;
+			break;
+		}
+		case 'r':
+		{
+			lup = true;
+			break;
+		}
+		case 'y':
+		{
+			ldown = true;
+			break;
+		}
+		case 'i':
+		{
+			bforward = true;
+			break;
+		}
+		case 'k':
+		{
+			bbackward = true;
+			break;
+		}
+		case 'l':
+		{
+			bright = true;
+			break;
+		}
+		case 'j':
+		{
+			bleft = true;
+			break;
+		}
+		case 'u':
+		{
+			bup = true;
+			break;
+		}
+		case 'o':
+		{
+			bdown = true;
+			break;
+		}
+		case '7':
+		{
+			bx = true;
+			break;
+		}
+		case '8':
+		{
+			by = true;
+			break;
+		}
+		case '9':
+		{
+			bz = true;
+			break;
+		}
+		case '4':
+		{
+			brx = true;
+			break;
+		}
+		case '5':
+		{
+			bry = true;
+			break;
+		}
+		case '6':
+		{
+			brz = true;
+			break;
+		}
 
-	//special function key
-	case 'z'://move light source to front of camera
-	{
-		light_pos[0] = eyex + cos(eyet*M_PI / 180)*cos(eyep*M_PI / 180);
-		light_pos[1] = eyey + sin(eyet*M_PI / 180);
-		light_pos[2] = eyez - cos(eyet*M_PI / 180)*sin(eyep*M_PI / 180);
-		break;
-	}
-	case 'x'://move ball to front of camera
-	{
-		ball_pos[0] = eyex + cos(eyet*M_PI / 180)*cos(eyep*M_PI / 180) * 3;
-		ball_pos[1] = eyey + sin(eyet*M_PI / 180) * 5;
-		ball_pos[2] = eyez - cos(eyet*M_PI / 180)*sin(eyep*M_PI / 180) * 3;
-		break;
-	}
-	case 'c'://reset all pose
-	{
-		light_pos[0] = 1;
-		light_pos[1] = 1;
-		light_pos[2] = 1;
-		ball_pos[0] = 0;
-		ball_pos[1] = 0;
-		ball_pos[2] = 0;
-		ball_rot[0] = 0;
-		ball_rot[1] = 0;
-		ball_rot[2] = 0;
-		eyex = 0;
-		eyey = 0;
-		eyez = 3;
-		eyet = 0;
-		eyep = 90;
-		break;
-	}
-	default:
-	{
-		break;
-	}
+		//special function key
+		case 'z'://move light source to front of camera
+		{
+			light_pos[0] = eyex + cos(eyet*M_PI / 180)*cos(eyep*M_PI / 180);
+			light_pos[1] = eyey + sin(eyet*M_PI / 180);
+			light_pos[2] = eyez - cos(eyet*M_PI / 180)*sin(eyep*M_PI / 180);
+			break;
+		}
+		case 'x'://move ball to front of camera
+		{
+			ball_pos[0] = eyex + cos(eyet*M_PI / 180)*cos(eyep*M_PI / 180) * 3;
+			ball_pos[1] = eyey + sin(eyet*M_PI / 180) * 5;
+			ball_pos[2] = eyez - cos(eyet*M_PI / 180)*sin(eyep*M_PI / 180) * 3;
+			break;
+		}
+		case 'c'://reset all pose
+		{
+			light_pos[0] = 1;
+			light_pos[1] = 1;
+			light_pos[2] = 1;
+			ball_pos[0] = 0;
+			ball_pos[1] = 0;
+			ball_pos[2] = 0;
+			ball_rot[0] = 0;
+			ball_rot[1] = 0;
+			ball_rot[2] = 0;
+			eyex = 0;
+			eyey = 0;
+			eyez = 3;
+			eyet = 0;
+			eyep = 90;
+			break;
+		}
+		default:
+		{
+			break;
+		}
 	}
 }
 
