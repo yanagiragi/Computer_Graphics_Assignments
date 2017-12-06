@@ -1,15 +1,18 @@
-/*
-CG Homework3 - Bump Mapping
-Objective - learning GLSL, glm model datatype(for .obj file) and bump mapping
-In this homework, you should load "Ball.obj" and normal map "NormalMap.ppm" with glm.c(done by TA)
-and render the object with color texure and normal mapping with Phong shading(and Phong lighting model of course).
-Please focus on the part with comment like "you may need to do somting here".
-If you don't know how to access vertices information of the model,
-I suggest you refer to glm.c for _GLMmodel structure and glm.h for glmReadOBJ() and glmDraw() function.
-And the infomation printed by print_model_info(model); of glm_helper.h helps as well!
-Finally, please pay attention to the datatype of the variable you use(might be a ID list or value array)
-Good luck!
+﻿/*
+	CG Homework3 - Bump Mapping
+	
+	Objective - learning GLSL, glm model datatype(for .obj file) and bump mapping
+	
+	In this homework, you should load "Ball.obj" and normal map "NormalMap.ppm" with glm.c(done by TA)
+	and render the object with color texure and normal mapping with Phong shading(and Phong lighting model of course).
+	Please focus on the part with comment like "you may need to do somting here".
+	If you don't know how to access vertices information of the model,
+	I suggest you refer to glm.c for _GLMmodel structure and glm.h for glmReadOBJ() and glmDraw() function.
+	And the infomation printed by print_model_info(model); of glm_helper.h helps as well!
+	Finally, please pay attention to the datatype of the variable you use(might be a ID list or value array)
+	Good luck!
 */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h> /*for function: offsetof */
@@ -19,6 +22,17 @@ Good luck!
 #include "../GL/glut.h""
 #include "../shader_lib/shader.h"
 #include "glm/glm.h"
+
+#include <glm/glm.hpp>
+#include <vector>
+#include <sstream>
+#include <string>
+#include <iterator>
+#include <iostream>
+#include <stdarg.h>
+
+using glm::vec3;
+
 extern "C"
 {
 	#include "glm_helper.h"
@@ -50,6 +64,7 @@ void idle(void);
 void draw_light_bulb(void);
 void camera_light_ball_move();
 GLuint load_normal_map(char* name);
+
 namespace
 {
 	char *obj_file_dir = "../Resources/Ball.obj";
@@ -102,6 +117,129 @@ GLfloat ball_pos[] = { 0.0, 0.0, 0.0 };
 GLfloat ball_rot[] = { 0.0, 0.0, 0.0 };
 GLfloat normalWid, normalHei;
 
+std::vector<struct Vertex> vertices;
+std::vector<unsigned int> indices;
+
+template<typename Out> void split(const std::string &s, char delim, Out result) {
+	std::stringstream ss(s);
+	std::string item;
+	while (std::getline(ss, item, delim)) {
+		*(result++) = item;
+	}
+}
+
+std::vector<std::string> split(const std::string &s, char delim) {
+	std::vector<std::string> elems;
+	split(s, delim, std::back_inserter(elems));
+	return elems;
+}
+
+void LoadObj(char* filename)
+{
+	using std::string;
+	std::vector<std::string> rawData;
+	std::vector<glm::vec2> texcoords;
+	std::vector<glm::vec3> normals;
+
+	FILE *fp;
+	fp = fopen(filename, "r");
+	char *buffer = (char *)malloc(sizeof(char) * 4096);
+	while (fgets(buffer, 4096, fp) != NULL)
+	{
+		rawData.push_back(buffer);
+	}
+	free(buffer);
+	fclose(fp);
+
+	for (std::string buffer : rawData)
+	{
+		if (buffer[0] == 'v' && buffer[1] == ' ') {
+
+			std::vector<std::string> v = split(buffer.substr(string("v ").size(), buffer.length() - string("v ").size()), ' ');
+
+			struct Vertex vert;
+			vert.position[0] = std::stof(v[0], nullptr);
+			vert.position[1] = std::stof(v[1], nullptr);
+			vert.position[2] = std::stof(v[2], nullptr);
+
+			vert.texcoord[0] = 0;
+			vert.texcoord[1] = 0;
+
+			vert.normal[0] = 0;
+			vert.normal[1] = 0;
+			vert.normal[2] = 0;
+			
+			vert.tangent[0] = 0;
+			vert.tangent[1] = 0;
+			vert.tangent[2] = 0;
+
+			vert.bitangent[0] = 0;
+			vert.bitangent[1] = 0;
+			vert.bitangent[2] = 0;
+
+			vertices.push_back(vert);
+		}
+		else if (buffer[0] == 'v' && buffer[1] == 't') {
+
+			std::vector<std::string> v = split(buffer.substr(string("vt ").size(), buffer.length() - string("vt ").size()), ' ');
+
+			auto coord = glm::vec2(
+				std::stof(v[0], nullptr),
+				std::stof(v[1], nullptr)
+			);
+
+			texcoords.push_back(coord);
+		}
+
+		else if (buffer[0] == 'v' && buffer[1] == 'n') {
+
+			std::vector<std::string> v = split(buffer.substr(string("vn ").size(), buffer.length() - string("vn ").size()), ' ');
+
+			auto normal = glm::vec3(
+				std::stof(v[0], nullptr),
+				std::stof(v[1], nullptr),
+				std::stof(v[2], nullptr)
+			);
+
+			normal = glm::normalize(normal);
+
+			normals.push_back(normal);
+		}
+
+		else if (buffer[0] == 'f') {
+			std::vector<std::string> f = split(buffer.substr(string("f ").size(), buffer.length() - string("f ").size()), ' ');
+
+			for (int i = 0; i < 3; ++i) {
+				std::vector<std::string> ff = split(f[i], '/');
+				int vertexIndex = std::stod(ff[0], nullptr) - 1;
+				int UVIndex = std::stod(ff[0], nullptr) - 1;
+				int normalIndex = std::stod(ff[0], nullptr) - 1;
+
+				vertices[vertexIndex].texcoord[0] = texcoords[UVIndex].x;
+				vertices[vertexIndex].texcoord[1] = texcoords[UVIndex].y;
+
+				if (
+					(vertices[vertexIndex].normal[0] + vertices[vertexIndex].normal[1] + vertices[vertexIndex].normal[2]) != 0 
+					&& 
+					((vertices[vertexIndex].normal[0] + vertices[vertexIndex].normal[1] + vertices[vertexIndex].normal[2]) != (normals[normalIndex].x + normals[normalIndex].y + normals[normalIndex].z))
+				)
+				{
+					// debug point;
+				}
+
+				vertices[vertexIndex].normal[0] = normals[normalIndex].x;
+				vertices[vertexIndex].normal[1] = normals[normalIndex].y;
+				vertices[vertexIndex].normal[2] = normals[normalIndex].z;
+
+				indices.push_back(vertexIndex);
+			}
+
+		}
+	}
+
+	return;
+}
+
 int main(int argc, char *argv[])
 {
 	glutInit(&argc, argv);
@@ -129,21 +267,175 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+unsigned int VAO, VBO, EBO;
+unsigned int vertexShader;
+unsigned int fragmentShader;
+unsigned int shaderProgram;
+
+#define ERROR_MESSAGE_LOG_SIZE 512
+int success;
+char infoLog[ERROR_MESSAGE_LOG_SIZE];
+
+bool CreateShader(unsigned int &shaderInstance, unsigned int shaderType, const GLchar* shaderSource) {
+
+	shaderInstance = glCreateShader(shaderType);
+
+	// 1 stands for one string in vertexShaderSource
+	glShaderSource(shaderInstance, 1, &shaderSource, NULL);
+	glCompileShader(shaderInstance);
+
+	glGetShaderiv(shaderInstance, GL_COMPILE_STATUS, &success);
+
+	if (!success) {
+		glGetShaderInfoLog(shaderInstance, ERROR_MESSAGE_LOG_SIZE, NULL, infoLog);
+		// std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+	}
+
+	return success;
+}
+
+bool CreateProgram(unsigned int &shaderProgramInstance, int n_args, ...)
+{
+	shaderProgramInstance = glCreateProgram();
+
+	va_list ap;
+	va_start(ap, n_args);
+	for (int i = 0; i < n_args; i++) {
+		int shaderID = va_arg(ap, unsigned int);
+		glAttachShader(shaderProgramInstance, shaderID);
+	}
+	va_end(ap);
+
+	glLinkProgram(shaderProgramInstance);
+
+	glGetProgramiv(shaderProgramInstance, GL_LINK_STATUS, &success);
+	if (!success) {
+		glGetProgramInfoLog(shaderProgramInstance, ERROR_MESSAGE_LOG_SIZE, NULL, infoLog);
+		std::cout << "ERROR::SHADER::LINK_FAILED\n" << infoLog << std::endl;
+	}
+	else {
+		va_start(ap, n_args);
+		for (int i = 0; i < n_args; i++) {
+			int shaderID = va_arg(ap, unsigned int);
+			glDeleteShader(shaderID);
+		}
+		va_end(ap);
+	}
+
+	return success;
+}
+
+char *ReadShader(char * shaderpath)
+{
+	FILE *fp;
+	fp = fopen(shaderpath, "r");
+	char *buffer = (char *)malloc(sizeof(char) * 4096);
+	char *data = (char *)malloc(sizeof(char) * 4096);
+	data[0] = '\0';
+	while (fgets(buffer, 4096, fp) != NULL)
+	{
+		strcat(data, buffer);
+	}
+	free(buffer);
+	fclose(fp);
+
+	return data;
+}
+
+void InitShader()
+{
+	char *vertexShaderSource = ReadShader("../Resources/vertex.glsl");
+	char *fragmentShaderSource = ReadShader("../Resources/fragment.glsl");
+	CreateShader(vertexShader, GL_VERTEX_SHADER, vertexShaderSource);
+	CreateShader(fragmentShader, GL_FRAGMENT_SHADER, fragmentShaderSource);
+	CreateProgram(shaderProgram, 2, vertexShader, fragmentShader);
+}
+
+void InitBuffer()
+{
+	// VAO = vertex attribute object, 1 stands for one buffer
+	glGenVertexArrays(1, &VAO);
+	// VBO = vertex buffer object
+	glGenBuffers(1, &VBO);
+	// EBO = element buffer object
+	glGenBuffers(1, &EBO);
+
+	glBindVertexArray(VAO);
+	// vertex buffer type: GL_ARRAY_BUFFER
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+
+	// copy vertex data into buffer's memory
+	// GL_STATIC_DRAW: the data will most likely not change at all or very rarely.
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &(vertices[0]), GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &(indices[0]), GL_STATIC_DRAW);
+
+	/*
+		Structure of Vertex looks like:
+			GLfloat position[3];
+			GLfloat normal[3];
+			GLfloat texcoord[2];
+			GLfloat tangent[3];
+			GLfloat bitangent[3];
+	*/
+
+	// 0 is the index of vertex attribute			
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (void *)0);
+	glEnableVertexAttribArray(0);
+
+	// vertex normals
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (void*)offsetof(struct Vertex, position));
+	glEnableVertexAttribArray(1);
+
+	// vertex UVs
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (void*)offsetof(struct Vertex, normal));
+	glEnableVertexAttribArray(2);
+
+	// vertex tangents
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (void*)offsetof(struct Vertex, texcoord));
+	glEnableVertexAttribArray(3);
+
+	// vertex bitangents
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (void*)offsetof(struct Vertex, tangent));
+	glEnableVertexAttribArray(4);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
 void init(void) {
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glEnable(GL_CULL_FACE);
+	
 	model = glmReadOBJ(obj_file_dir);
 	normalTextureID = load_normal_map(normal_map_dir);
 	glmUnitize(model);
 	glmFacetNormals(model);
 	glmVertexNormals(model, 90.0, GL_FALSE);
+
 	glEnable(GL_DEPTH_TEST);
 	print_model_info(model);
 
 	//you may need to do somting here(create shaders/program(s) and create vbo(s)/vao from GLMmodel model)
+
+	LoadObj(obj_file_dir);
+
+	InitShader();
+
+	InitBuffer();
 }
+/*
+glm::mat4 getV()
+{
+	return glm::lookAt(cameraPos, cameraPos + cameraFront, cameraRight);
+}
+
+glm::mat4 getP()
+{
+	return glm::perspective(glm::radians(fov), aspect_ratio, nearPlane, farPlane);
+}*/
 
 void display(void)
 {
@@ -153,19 +445,20 @@ void display(void)
 
 	//please try not to modify the following block of code(you can but you are not supposed to)
 	glMatrixMode(GL_MODELVIEW);
+	
 	glLoadIdentity();
-	gluLookAt(eyex, eyey, eyez,
-		eyex+cos(eyet*M_PI/180)*cos(eyep*M_PI / 180), eyey+sin(eyet*M_PI / 180), eyez-cos(eyet*M_PI / 180)*sin(eyep*M_PI / 180),
-		0.0, 1.0, 0.0);
+	gluLookAt(eyex, eyey, eyez,eyex+cos(eyet*M_PI/180)*cos(eyep*M_PI / 180), eyey+sin(eyet*M_PI / 180), eyez-cos(eyet*M_PI / 180)*sin(eyep*M_PI / 180),0.0, 1.0, 0.0);
+
 	draw_light_bulb();
+	
 	glPushMatrix();
 		glTranslatef(ball_pos[0], ball_pos[1], ball_pos[2]);
 		glRotatef(ball_rot[0], 1, 0, 0);
 		glRotatef(ball_rot[1], 0, 1, 0);
 		glRotatef(ball_rot[2], 0, 0, 1);
-	//please try not to modify the previous block of code
+		//please try not to modify the previous block of code
 
-	//you may need to do something here(pass the uniform variable to shader and render the model)
+		//you may need to do something here(pass the uniform variable to shader and render the model)
 		glmDraw(model,GLM_TEXTURE);//please delete this line in your final code! It's just a preview of rendered object
 
 	glPopMatrix();
@@ -356,6 +649,7 @@ void reshape(int width, int height)
 	gluPerspective(45.0f, (GLfloat)width / (GLfloat)height, 0.001f, 100.0f);
 	glMatrixMode(GL_MODELVIEW);
 }
+
 void motion(int x, int y) {
 	if (mleft)
 	{
@@ -373,6 +667,7 @@ void motion(int x, int y) {
 	mousex = x;
 	mousey = y;
 }
+
 void mouse(int button, int state, int x, int y) {
 	if (button == GLUT_LEFT_BUTTON)
 	{
@@ -408,6 +703,7 @@ void mouse(int button, int state, int x, int y) {
 			mmiddle = false;
 	}
 }
+
 void camera_light_ball_move()
 {
 	GLfloat dx = 0, dy = 0, dz=0;
@@ -491,6 +787,7 @@ void camera_light_ball_move()
 		ball_rot[2] += dz;
 	}
 }
+
 void draw_light_bulb()
 {
 	GLUquadric *quad;
@@ -501,6 +798,7 @@ void draw_light_bulb()
 	gluSphere(quad, light_rad, 40, 20);
 	glPopMatrix();
 }
+
 void keyboardup(unsigned char key, int x, int y) {
 	switch (key) {
 	case 'd':
@@ -630,10 +928,12 @@ void keyboardup(unsigned char key, int x, int y) {
 	}
 	}
 }
+
 void idle(void)
 {
 	glutPostRedisplay();
 }
+
 GLuint load_normal_map(char* name)
 {
 	return glmLoadTexture(name, false, true, true, true, &normalWid, &normalHei);
