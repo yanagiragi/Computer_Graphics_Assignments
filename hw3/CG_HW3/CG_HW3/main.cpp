@@ -49,6 +49,8 @@ void InitTexture()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	normalTextureID = load_normal_map(normal_map_dir);
 }
 
 
@@ -104,6 +106,8 @@ void init(void) {
 	
 	InitTexture();
 
+	
+
 	LoadObj(obj_file_dir);
 
 	InitShader();
@@ -157,10 +161,13 @@ void display(void)
 	glm::vec4 worldpos = M * glm::vec4(0.0);
 	glUniform3f(glGetUniformLocation(shaderProgram, "WorldPos"), worldpos[0], worldpos[1], worldpos[2]);
 
-	GLint loc = glGetUniformLocation(shaderProgram, "mainTex");
 	glActiveTexture(GL_TEXTURE0 + 0);
 	glBindTexture(GL_TEXTURE_2D, TextureID);	
-	glUniform1i(loc, 0);
+	glUniform1i(glGetUniformLocation(shaderProgram, "mainTex"), 0);
+
+	glActiveTexture(GL_TEXTURE0 + 1);
+	glBindTexture(GL_TEXTURE_2D, normalTextureID);
+	glUniform1i(glGetUniformLocation(shaderProgram, "bumpTex"), 1);
 	
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);

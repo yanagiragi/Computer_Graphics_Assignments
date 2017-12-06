@@ -11,14 +11,23 @@ uniform mat4 M;
 uniform mat4 V;
 uniform mat4 P;
 
+out mat4 Model;
 out vec2 uv;
 out vec3 worldNormal;
 out vec4 outColor;
+out vec3 n;
+out vec3 t;
+out vec3 b;
 
 void main()
 {
 	uv = textcoord;
 	outColor = vec4(normal.x, normal.y, normal.z, 1.0);
+
+	n = normal;
+	t = tangent;
+	b = bitangent;
+	Model = M;
 
 	worldNormal = (M * vec4(normal, 1.0)).xyz;
 
