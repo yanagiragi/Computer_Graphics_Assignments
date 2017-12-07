@@ -25,7 +25,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
+#define _CRT_SECURE_NO_WARNINGS
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -244,7 +244,7 @@ found:
 
 
 
-
+#define _CRT_SECURE_NO_WARNINGS
 /* glmFindTexture: Find a texture in the model */
 static GLuint
 glmFindOrAddTexture(GLMmodel* model, const char* name)
@@ -270,7 +270,7 @@ glmFindOrAddTexture(GLMmodel* model, const char* name)
        texture (0). */
     model->numtextures++;
     model->textures = (GLMtexture*)realloc(model->textures, sizeof(GLMtexture) * model->numtextures);
-    model->textures[model->numtextures - 1].name = strdup(name);
+    model->textures[model->numtextures - 1].name = _strdup(name);
     model->textures[model->numtextures - 1].id =
         glmLoadTexture(filename, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE, &width, &height);
     model->textures[model->numtextures - 1].width = width;

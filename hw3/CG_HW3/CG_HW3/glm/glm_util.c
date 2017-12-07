@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>

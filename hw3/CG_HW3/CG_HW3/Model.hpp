@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <glm/glm.hpp>
 #include <vector>
 #include <sstream>
@@ -17,7 +18,13 @@ struct Vertex
 typedef struct Vertex Vertex;
 
 std::vector<struct Vertex> vertices;
-std::vector<unsigned int> indices;
+std::vector<glm::vec3> positions;
+std::vector<glm::vec2> texcoords;
+std::vector<glm::vec3> normals;
+std::vector<glm::vec3> tangents;
+std::vector<glm::vec3> bitangents;
+std::vector<glm::vec3> indices;
+std::vector<unsigned int> vindices;
 
 template<typename Out> void split(const std::string &s, char delim, Out result) {
 	std::stringstream ss(s);
@@ -37,8 +44,6 @@ void LoadObj(char* filename)
 {
 	using std::string;
 	std::vector<std::string> rawData;
-	std::vector<glm::vec2> texcoords;
-	std::vector<glm::vec3> normals;
 
 	FILE *fp;
 	fp = fopen(filename, "r");
@@ -56,27 +61,18 @@ void LoadObj(char* filename)
 
 			std::vector<std::string> v = split(buffer.substr(string("v ").size(), buffer.length() - string("v ").size()), ' ');
 
-			struct Vertex vert;
+			positions.push_back(glm::vec3(
+				std::stof(v[0], nullptr),
+				std::stof(v[1], nullptr),
+				std::stof(v[2], nullptr)
+			));
+
+			/*struct Vertex vert;
 			vert.position[0] = std::stof(v[0], nullptr);
 			vert.position[1] = std::stof(v[1], nullptr);
 			vert.position[2] = std::stof(v[2], nullptr);
 
-			vert.texcoord[0] = 0;
-			vert.texcoord[1] = 0;
-
-			vert.normal[0] = 0;
-			vert.normal[1] = 0;
-			vert.normal[2] = 0;
-
-			vert.tangent[0] = 0;
-			vert.tangent[1] = 0;
-			vert.tangent[2] = 0;
-
-			vert.bitangent[0] = 0;
-			vert.bitangent[1] = 0;
-			vert.bitangent[2] = 0;
-
-			vertices.push_back(vert);
+			vertices.push_back(vert);*/
 		}
 		else if (buffer[0] == 'v' && buffer[1] == 't') {
 
@@ -87,7 +83,7 @@ void LoadObj(char* filename)
 				std::stof(v[1], nullptr)
 			);
 
-			texcoords.push_back(coord);
+			//texcoords.push_back(coord);
 		}
 
 		else if (buffer[0] == 'v' && buffer[1] == 'n') {
@@ -105,7 +101,7 @@ void LoadObj(char* filename)
 			normals.push_back(normal);
 		}
 
-		else if (buffer[0] == 'f') {
+		else if (buffer[0] == 'f' && buffer[1] == ' ') {
 			std::vector<std::string> f = split(buffer.substr(string("f ").size(), buffer.length() - string("f ").size()), ' ');
 
 			std::vector<int> v;
@@ -115,33 +111,17 @@ void LoadObj(char* filename)
 			for (int i = 0; i < 3; ++i) {
 				std::vector<std::string> ff = split(f[i], '/');
 				int vertexIndex = std::stod(ff[0], nullptr) - 1;
-				int UVIndex = std::stod(ff[0], nullptr) - 1;
-				int normalIndex = std::stod(ff[0], nullptr) - 1;
+				int UVIndex = std::stod(ff[1], nullptr) - 1;
+				int normalIndex = std::stod(ff[2], nullptr) - 1;
 
-				v.push_back(vertexIndex);
-				u.push_back(UVIndex);
-				n.push_back(normalIndex);
-
-				vertices[vertexIndex].texcoord[0] = texcoords[UVIndex].x;
-				vertices[vertexIndex].texcoord[1] = texcoords[UVIndex].y;
-
-				if (
-					(vertices[vertexIndex].normal[0] + vertices[vertexIndex].normal[1] + vertices[vertexIndex].normal[2]) != 0
-					&&
-					((vertices[vertexIndex].normal[0] + vertices[vertexIndex].normal[1] + vertices[vertexIndex].normal[2]) != (normals[normalIndex].x + normals[normalIndex].y + normals[normalIndex].z))
-					)
-				{
-					// debug point;
-				}
-
-				vertices[vertexIndex].normal[0] = normals[normalIndex].x;
-				vertices[vertexIndex].normal[1] = normals[normalIndex].y;
-				vertices[vertexIndex].normal[2] = normals[normalIndex].z;
-
-				indices.push_back(vertexIndex);
+				//v.push_back(vertexIndex);
+				//u.push_back(UVIndex);
+				//n.push_back(normalIndex);
+			
+				indices.push_back(glm::vec3(vertexIndex, UVIndex, normalIndex));
 			}
-
-			glm::vec3 v0 = glm::vec3(vertices[v[0]].position[0], vertices[v[0]].position[1], vertices[v[0]].position[2]);
+			
+			/*glm::vec3 v0 = glm::vec3(vertices[v[0]].position[0], vertices[v[0]].position[1], vertices[v[0]].position[2]);
 			glm::vec3 v1 = glm::vec3(vertices[v[1]].position[0], vertices[v[1]].position[1], vertices[v[1]].position[2]);
 			glm::vec3 v2 = glm::vec3(vertices[v[2]].position[0], vertices[v[2]].position[1], vertices[v[2]].position[2]);
 
@@ -162,16 +142,59 @@ void LoadObj(char* filename)
 			glm::vec3 bitangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x)*r;
 
 			for (int i = 0; i < 3; ++i) {
-				vertices[v[i]].tangent[0] += tangent.x;
+				tangents.push_back(tangent);
+				bitangents.push_back(bitangent);
+				/*vertices[v[i]].tangent[0] += tangent.x;
 				vertices[v[i]].tangent[1] += tangent.y;
 				vertices[v[i]].tangent[2] += tangent.z;
 				vertices[v[i]].bitangent[0] += bitangent.x;
 				vertices[v[i]].bitangent[1] += bitangent.y;
 				vertices[v[i]].bitangent[2] += bitangent.z;
-			}
+			}*/
 
 		}
 	}
+
+	GLMmodel *model = glmReadOBJ(filename);
+	auto a = model->texcoords;
+
+	for (int i = 0; i < model->numtriangles; ++i)
+	{
+		int vindex[3] = { model->triangles[i].vindices[0], model->triangles[i].vindices[1], model->triangles[i].vindices[2] };
+		std::vector<glm::vec3> p;
+		
+		for (int j = 0; j < 3; ++j) {
+			glm::vec3 pos = glm::vec3(model->vertices[vindex[j] * 3 + 0], model->vertices[vindex[j] * 3 + 1], model->vertices[vindex[j] * 3 + 2]);
+			p.push_back(pos);
+		}
+
+		int nindex[3] = { model->triangles[i].nindices[0], model->triangles[i].nindices[1], model->triangles[i].nindices[2] };
+		std::vector<glm::vec3> n;
+
+		for (int j = 0; j < 3; ++j) {
+			glm::vec3 nor = glm::vec3(model->normals[nindex[j] * 3 + 0], model->normals[nindex[j] * 3 + 1], model->normals[nindex[j] * 3 + 2]);
+			n.push_back(nor);
+		}
+
+		int tindex[3] = { model->triangles[i].tindices[0], model->triangles[i].tindices[1], model->triangles[i].tindices[2] };
+		std::vector<glm::vec2> t;
+
+		for (int j = 0; j < 3; ++j) {
+			glm::vec2 tex = glm::vec2(model->texcoords[tindex[j] * 2 + 0], model->texcoords[tindex[j] * 2 + 1]);
+			t.push_back(tex);
+		}
+	}
+
+	/*
+	for (int i = 2; i < model->numtriangles * 2 + 2 - 1; i+=2)
+	{
+		texcoords.push_back(
+			glm::vec2(
+				model->texcoords[i],
+				model->texcoords[i + 1]
+			)
+		);
+	}*/
 
 	return;
 }

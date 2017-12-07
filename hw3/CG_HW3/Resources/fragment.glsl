@@ -38,6 +38,7 @@ void main()
 {
 	float _BumpScale = 1;
 	vec4 _LightColor0 = vec4(1.0, 1.0, 1.0, 1.0);
+	vec4 _Ambient = vec4(0.1, 0.1, 0.1, 1.0);
 	vec4 _Diffuse = vec4(1.0, 1.0, 1.0, 1.0);
 	vec4 _Specular = vec4(1.0, 1.0, 1.0, 1.0);
 	float _Gloss = 25;
@@ -51,7 +52,6 @@ void main()
 	vec3 wNormal = normalize((Model * vec4(n, 1.0)).xyz);
 	vec3 wTangent = normalize((Model * vec4(t, 1.0)).xyz);
 	vec3 wBinormal = normalize(cross(wNormal, wTangent));
-
 
 	//mat3 tangent2Model = toMat3((Model * vec4(Normal, 1.0)).xyz, (Model * vec4(Tangent, 1.0)).xyz, (Model * vec4(Binormal, 1.0)).xyz);
 	mat3 tangent2Model = toMat3(wNormal, wTangent, wBinormal);
@@ -74,7 +74,7 @@ void main()
 
 	vec3 nWorldNormal = normalize(worldNormal);
 
-	nWorldNormal = tangentNormal;
+	//nWorldNormal = tangentNormal;
 
 	vec3 reflectDirection = normalize(reflect(-nWorldLight, nWorldNormal));
 
@@ -82,12 +82,18 @@ void main()
 
 	vec4 albedo = texture2D(mainTex, uv);
 
+	vec3 ambient = _Ambient.xyz;
+
 	vec3 diffuse = _LightColor0.rgb * _Diffuse.rgb * albedo.rgb * max(0, dot(nWorldNormal, nWorldLight));
 				
 	vec3 specular = _LightColor0.rgb * _Specular.rgb * pow(max(0, dot(viewDirection, reflectDirection)), _Gloss);
 
-	vec3 color = diffuse + specular;
+	vec3 color = ambient + diffuse + specular;
 
 	FragColor = vec4(color, 1.0);
+
+	FragColor = albedo;
+
+	//FragColor = vec4(1.0, 1.0, 0.0, 1.0);
 
 }
