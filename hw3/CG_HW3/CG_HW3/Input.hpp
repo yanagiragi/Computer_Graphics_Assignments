@@ -44,6 +44,9 @@ namespace
 	GLfloat ball_rot[] = { 0.0, 0.0, 0.0 };
 	const float speed = 0.01;				//camera/light/ball moving speed
 	const float rotation_speed = 0.05;		//ball rotation speed
+	int frame = 0;
+	float realFrame = 0;
+	bool startBouncing = false;
 }
 
 void motion(int x, int y) {
@@ -325,6 +328,12 @@ void keyboardup(unsigned char key, int x, int y) {
 		case '-':
 		{
 			bumpScale -= 0.1f;
+			break;
+		}
+		case 'n':
+		{
+			startBouncing = !startBouncing;
+			realFrame = 0.0;
 			break;
 		}
 

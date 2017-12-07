@@ -4,6 +4,7 @@ uniform sampler2D mainTex;
 uniform sampler2D bumpTex;
 uniform mat4 M;
 uniform mat4 V;
+uniform mat4 P;
 uniform bool isBump;
 uniform float _BumpScale;
 

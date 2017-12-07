@@ -248,6 +248,13 @@ glm::mat4 getP()
 
 void display(void)
 {
+	++frame;
+
+	if (startBouncing)
+	{
+		realFrame += 0.05;
+	}
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 	glPushMatrix();
@@ -277,6 +284,8 @@ void display(void)
 
 	glUniform1i (glGetUniformLocation(shaderProgram, "isBump"), isBump);
 	glUniform1f(glGetUniformLocation(shaderProgram, "_BumpScale"), bumpScale);
+	glUniform1f(glGetUniformLocation(shaderProgram, "frame"), realFrame);
+	glUniform1i(glGetUniformLocation(shaderProgram, "bouncing"), (int)startBouncing);
 
 	glActiveTexture(GL_TEXTURE0 + 0);
 	glBindTexture(GL_TEXTURE_2D, TextureID);	
