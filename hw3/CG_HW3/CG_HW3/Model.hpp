@@ -25,6 +25,7 @@ std::vector<glm::vec3> tangents;
 std::vector<glm::vec3> bitangents;
 std::vector<glm::vec3> indices;
 std::vector<unsigned int> vindices;
+GLMmodel *model;
 
 template<typename Out> void split(const std::string &s, char delim, Out result) {
 	std::stringstream ss(s);
@@ -55,7 +56,7 @@ void LoadObj(char* filename)
 	free(buffer);
 	fclose(fp);
 
-	for (std::string buffer : rawData)
+	/*for (std::string buffer : rawData)
 	{
 		if (buffer[0] == 'v' && buffer[1] == ' ') {
 
@@ -66,13 +67,6 @@ void LoadObj(char* filename)
 				std::stof(v[1], nullptr),
 				std::stof(v[2], nullptr)
 			));
-
-			/*struct Vertex vert;
-			vert.position[0] = std::stof(v[0], nullptr);
-			vert.position[1] = std::stof(v[1], nullptr);
-			vert.position[2] = std::stof(v[2], nullptr);
-
-			vertices.push_back(vert);*/
 		}
 		else if (buffer[0] == 'v' && buffer[1] == 't') {
 
@@ -83,7 +77,6 @@ void LoadObj(char* filename)
 				std::stof(v[1], nullptr)
 			);
 
-			//texcoords.push_back(coord);
 		}
 
 		else if (buffer[0] == 'v' && buffer[1] == 'n') {
@@ -114,74 +107,38 @@ void LoadObj(char* filename)
 				int UVIndex = std::stod(ff[1], nullptr) - 1;
 				int normalIndex = std::stod(ff[2], nullptr) - 1;
 
-				//v.push_back(vertexIndex);
-				//u.push_back(UVIndex);
-				//n.push_back(normalIndex);
 			
 				indices.push_back(glm::vec3(vertexIndex, UVIndex, normalIndex));
 			}
-			
-			/*glm::vec3 v0 = glm::vec3(vertices[v[0]].position[0], vertices[v[0]].position[1], vertices[v[0]].position[2]);
-			glm::vec3 v1 = glm::vec3(vertices[v[1]].position[0], vertices[v[1]].position[1], vertices[v[1]].position[2]);
-			glm::vec3 v2 = glm::vec3(vertices[v[2]].position[0], vertices[v[2]].position[1], vertices[v[2]].position[2]);
-
-			glm::vec2 uv0 = texcoords[u[0]];
-			glm::vec2 uv1 = texcoords[u[1]];
-			glm::vec2 uv2 = texcoords[u[2]];
-			
-			// Edges of the triangle : postion delta
-			glm::vec3 deltaPos1 = v1 - v0;
-			glm::vec3 deltaPos2 = v2 - v0;
-
-			// UV delta
-			glm::vec2 deltaUV1 = uv1 - uv0;
-			glm::vec2 deltaUV2 = uv2 - uv0;
-
-			float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
-			glm::vec3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y)*r;
-			glm::vec3 bitangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x)*r;
-
-			for (int i = 0; i < 3; ++i) {
-				tangents.push_back(tangent);
-				bitangents.push_back(bitangent);
-				/*vertices[v[i]].tangent[0] += tangent.x;
-				vertices[v[i]].tangent[1] += tangent.y;
-				vertices[v[i]].tangent[2] += tangent.z;
-				vertices[v[i]].bitangent[0] += bitangent.x;
-				vertices[v[i]].bitangent[1] += bitangent.y;
-				vertices[v[i]].bitangent[2] += bitangent.z;
-			}*/
-
 		}
-	}
+	}*/
 
-	GLMmodel *model = glmReadOBJ(filename);
-	auto a = model->texcoords;
-
+	model = glmReadOBJ(filename);
+	
 	for (int i = 0; i < model->numtriangles; ++i)
 	{
 		int vindex[3] = { model->triangles[i].vindices[0], model->triangles[i].vindices[1], model->triangles[i].vindices[2] };
-		std::vector<glm::vec3> p;
+		//std::vector<glm::vec3> p;
 		
 		for (int j = 0; j < 3; ++j) {
 			glm::vec3 pos = glm::vec3(model->vertices[vindex[j] * 3 + 0], model->vertices[vindex[j] * 3 + 1], model->vertices[vindex[j] * 3 + 2]);
-			p.push_back(pos);
+			positions.push_back(pos);
 		}
 
 		int nindex[3] = { model->triangles[i].nindices[0], model->triangles[i].nindices[1], model->triangles[i].nindices[2] };
-		std::vector<glm::vec3> n;
+		//std::vector<glm::vec3> n;
 
 		for (int j = 0; j < 3; ++j) {
 			glm::vec3 nor = glm::vec3(model->normals[nindex[j] * 3 + 0], model->normals[nindex[j] * 3 + 1], model->normals[nindex[j] * 3 + 2]);
-			n.push_back(nor);
+			normals.push_back(nor);
 		}
 
 		int tindex[3] = { model->triangles[i].tindices[0], model->triangles[i].tindices[1], model->triangles[i].tindices[2] };
-		std::vector<glm::vec2> t;
+		//std::vector<glm::vec2> t;
 
 		for (int j = 0; j < 3; ++j) {
 			glm::vec2 tex = glm::vec2(model->texcoords[tindex[j] * 2 + 0], model->texcoords[tindex[j] * 2 + 1]);
-			t.push_back(tex);
+			texcoords.push_back(tex);
 		}
 	}
 

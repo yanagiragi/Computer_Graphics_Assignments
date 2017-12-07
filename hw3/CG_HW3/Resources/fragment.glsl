@@ -39,8 +39,8 @@ void main()
 	float _BumpScale = 1;
 	vec4 _LightColor0 = vec4(1.0, 1.0, 1.0, 1.0);
 	vec4 _Ambient = vec4(0.1, 0.1, 0.1, 1.0);
-	vec4 _Diffuse = vec4(1.0, 1.0, 1.0, 1.0);
-	vec4 _Specular = vec4(1.0, 1.0, 1.0, 1.0);
+	vec4 _Diffuse = vec4(0.8, 0.8, 0.8, 1.0);
+	vec4 _Specular = vec4(0.5, 0.5, 0.5, 1.0);
 	float _Gloss = 25;
 
 	
@@ -82,17 +82,17 @@ void main()
 
 	vec4 albedo = texture2D(mainTex, uv);
 
-	vec3 ambient = _Ambient.xyz;
+	vec3 ambient = _Ambient.xyz * albedo.xyz;
 
 	vec3 diffuse = _LightColor0.rgb * _Diffuse.rgb * albedo.rgb * max(0, dot(nWorldNormal, nWorldLight));
 				
 	vec3 specular = _LightColor0.rgb * _Specular.rgb * pow(max(0, dot(viewDirection, reflectDirection)), _Gloss);
 
-	vec3 color = ambient + diffuse + specular;
+	vec3 color = ambient + diffuse;// +specular;
 
 	FragColor = vec4(color, 1.0);
 
-	FragColor = albedo;
+	//FragColor = albedo;
 
 	//FragColor = vec4(1.0, 1.0, 0.0, 1.0);
 

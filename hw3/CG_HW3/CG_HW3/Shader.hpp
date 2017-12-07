@@ -1,5 +1,5 @@
 
-unsigned int VAO, VBO, EBO;
+GLuint VAO, VBO[3], EBO;
 unsigned int vertexShader;
 unsigned int fragmentShader;
 unsigned int shaderProgram;

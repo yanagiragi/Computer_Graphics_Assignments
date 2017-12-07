@@ -61,15 +61,17 @@ void InitTexture()
 void InitBuffer()
 {
 	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
+	
+	glGenBuffers(3, VBO);
 	//glGenBuffers(1, &EBO);
 
 	glBindVertexArray(VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	
+	
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 
 	// reOrder vertex
-	for (int i = 0; i < indices.size(); i+=3) {
+	/*for (int i = 0; i < indices.size(); i+=3) {
 		
 		std::vector<glm::vec3> vpos;
 		std::vector<glm::vec3> vnor;
@@ -134,34 +136,33 @@ void InitBuffer()
 			vertices.push_back(vert);
 		}
 
-	}
+	}*/
 
+	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+	glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), &(positions[0]), GL_STATIC_DRAW);
+	// 0 is the index of vertex attribute			
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void *)0);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
 
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &(vertices[0]), GL_STATIC_DRAW);
-	//glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), &(positions[0]), GL_STATIC_DRAW);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &(indices[0]), GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
+	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &(normals[0]), GL_STATIC_DRAW);
+	// vertex normals
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
+	glBindBuffer(GL_ARRAY_BUFFER, VBO[2]);
+	glBufferData(GL_ARRAY_BUFFER, texcoords.size() * sizeof(glm::vec2), &(texcoords[0]), GL_STATIC_DRAW);
+	// vertex UVs
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
+	glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
+	glBindVertexArray(0);
 
 	/*
-		Structure of Vertex looks like:
-			GLfloat position[3];
-			GLfloat normal[3];
-			GLfloat texcoord[2];
-			GLfloat tangent[3];
-			GLfloat bitangent[3];
-	*/
-
-	// 0 is the index of vertex attribute			
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (void *)0);
-	glEnableVertexAttribArray(0);
-
-	// vertex normals
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (void*)offsetof(struct Vertex, position));
-	glEnableVertexAttribArray(1);
-
-	// vertex UVs
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (void*)offsetof(struct Vertex, normal));
-	glEnableVertexAttribArray(2);
-
 	// vertex tangents
 	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (void*)offsetof(struct Vertex, texcoord));
 	glEnableVertexAttribArray(3);
@@ -169,9 +170,8 @@ void InitBuffer()
 	// vertex bitangents
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (void*)offsetof(struct Vertex, tangent));
 	glEnableVertexAttribArray(4);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
+	*/
+	
 	/*
 	// 1 is the index of vertex texcoord
 	glBufferData(GL_ARRAY_BUFFER, texcoords.size() * sizeof(glm::vec2), &(texcoords[0]), GL_STATIC_DRAW);
@@ -270,7 +270,7 @@ void display(void)
 	glUniform1i(glGetUniformLocation(shaderProgram, "bumpTex"), 1);
 	
 	glBindVertexArray(VAO);
-	glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+	glDrawArrays(GL_TRIANGLES, 0, model->numtriangles * 3);
 
 	glutSwapBuffers();
 	camera_light_ball_move();
