@@ -32,17 +32,18 @@ namespace
 	bool brx = false;
 	bool bry = false;
 	bool brz = false;
+	int isBump = 0;
 	int mousex = 0;
 	int mousey = 0;
-
+	float bumpScale = 1.0;
 	float eyex = 0.0;
 	float eyey = 0.0;
 	float eyez = 3.0;
 	GLfloat light_pos[] = { 1, 1, 1 };
 	GLfloat ball_pos[] = { 0.0, 0.0, 0.0 };
 	GLfloat ball_rot[] = { 0.0, 0.0, 0.0 };
-	const float speed = 0.005;//camera/light/ball moving speed
-	const float rotation_speed = 0.05;//ball rotation speed
+	const float speed = 0.01;				//camera/light/ball moving speed
+	const float rotation_speed = 0.05;		//ball rotation speed
 }
 
 void motion(int x, int y) {
@@ -316,6 +317,16 @@ void keyboardup(unsigned char key, int x, int y) {
 			brz = false;
 			break;
 		}
+		case '=':
+		{
+			bumpScale += 0.1f;
+			break;
+		}
+		case '-':
+		{
+			bumpScale -= 0.1f;
+			break;
+		}
 
 		default:
 		{
@@ -333,7 +344,8 @@ void keyboard(unsigned char key, int x, int y) {
 		}
 		case 'b'://toggle bump mapping
 		{
-			//you may need to do somting here
+			isBump++;
+			isBump = (isBump) % 2;
 			break;
 		}
 		case 'd':

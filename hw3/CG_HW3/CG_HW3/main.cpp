@@ -62,7 +62,7 @@ void InitBuffer()
 {
 	glGenVertexArrays(1, &VAO);
 	
-	glGenBuffers(3, VBO);
+	glGenBuffers(5, VBO);
 	//glGenBuffers(1, &EBO);
 
 	glBindVertexArray(VAO);
@@ -158,6 +158,20 @@ void InitBuffer()
 	// vertex UVs
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
 	glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO[3]);
+	glBufferData(GL_ARRAY_BUFFER, tangents.size() * sizeof(glm::vec3), &(tangents[0]), GL_STATIC_DRAW);
+	// vertex UVs
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
+	glEnableVertexAttribArray(3);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO[4]);
+	glBufferData(GL_ARRAY_BUFFER, bitangents.size() * sizeof(glm::vec3), &(bitangents[0]), GL_STATIC_DRAW);
+	// vertex UVs
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+	glEnableVertexAttribArray(4);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
 	glBindVertexArray(0);
@@ -257,9 +271,12 @@ void display(void)
 	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "P"), 1, GL_FALSE, &getP()[0][0]);
 
 	glUniform3f(glGetUniformLocation(shaderProgram, "lightPos"), light_pos[0], light_pos[1], light_pos[2]);
-	glUniform3f(glGetUniformLocation(shaderProgram, "CameraPos"), eyex, eyey, eyez);
-	glm::vec4 worldpos = M * glm::vec4(0.0);
-	glUniform3f(glGetUniformLocation(shaderProgram, "WorldPos"), worldpos[0], worldpos[1], worldpos[2]);
+	//glUniform3f(glGetUniformLocation(shaderProgram, "CameraPos"), eyex, eyey, eyez);
+	//glm::vec4 worldpos = M * glm::vec4(0.0);
+	//glUniform3f(glGetUniformLocation(shaderProgram, "WorldPos"), worldpos[0], worldpos[1], worldpos[2]);
+
+	glUniform1i (glGetUniformLocation(shaderProgram, "isBump"), isBump);
+	glUniform1f(glGetUniformLocation(shaderProgram, "_BumpScale"), bumpScale);
 
 	glActiveTexture(GL_TEXTURE0 + 0);
 	glBindTexture(GL_TEXTURE_2D, TextureID);	
