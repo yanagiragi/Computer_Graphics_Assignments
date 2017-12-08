@@ -22,15 +22,18 @@
 #include <string.h>
 #include "../GL/glew.h"
 #include "../GL/glut.h"
+#include "glm/glm.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <vector>
 
-#include "Texture.hpp"
 #include "Model.hpp"
 #include "Shader.hpp"
 #include "Input.hpp"
+
+GLuint TextureID, normalTextureID;
+GLfloat normalWid, normalHei;
 
 void InitShader()
 {
@@ -41,18 +44,14 @@ void InitShader()
 	CreateProgram(shaderProgram, 2, vertexShader, fragmentShader);
 }
 
+GLuint load_normal_map(char* name)
+{
+	return glmLoadTexture(name, false, true, true, true, &normalWid, &normalHei);
+}
+
 void InitTexture()
 {
-	/*glGenTextures(1, &TextureID);
-	glBindTexture(GL_TEXTURE_2D, TextureID);
-	Image* texture = LoadTexture("../Resources/Tile.bmp");
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture->sizeX, texture->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, texture->data);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);*/
-
-	TextureID = load_normal_map("../Resources/Tile.ppm");
+	TextureID = load_normal_map(main_tex_dir);
 
 	normalTextureID = load_normal_map(normal_map_dir);
 }
@@ -61,83 +60,10 @@ void InitTexture()
 void InitBuffer()
 {
 	glGenVertexArrays(1, &VAO);
-	
 	glGenBuffers(5, VBO);
-	//glGenBuffers(1, &EBO);
 
 	glBindVertexArray(VAO);
 	
-	
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-
-	// reOrder vertex
-	/*for (int i = 0; i < indices.size(); i+=3) {
-		
-		std::vector<glm::vec3> vpos;
-		std::vector<glm::vec3> vnor;
-		std::vector<glm::vec2> vtex;
-
-		for (int j = 0; j < 3; ++j) {
-			int vertexIndex = indices[i + j].x;
-			int UVIndex = indices[i + j].y;
-			int normalIndex = indices[i + j].z;
-
-			glm::vec3 pos = positions[vertexIndex];
-			glm::vec2 uv = texcoords[UVIndex];
-			glm::vec3 normal = normals[normalIndex];
-
-			vpos.push_back(pos);
-			vtex.push_back(uv);
-			vnor.push_back(normal);			
-		}
-		
-		glm::vec3 v0 = vpos[0];
-		glm::vec3 v1 = vpos[1];
-		glm::vec3 v2 = vpos[2];
-
-		glm::vec2 uv0 = vtex[0];
-		glm::vec2 uv1 = vtex[1];
-		glm::vec2 uv2 = vtex[2];
-
-		// Edges of the triangle : postion delta
-		glm::vec3 deltaPos1 = v1 - v0;
-		glm::vec3 deltaPos2 = v2 - v0;
-
-		// UV delta
-		glm::vec2 deltaUV1 = uv1 - uv0;
-		glm::vec2 deltaUV2 = uv2 - uv0;
-
-		float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
-		glm::vec3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y)*r;
-		glm::vec3 bitangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x)*r;
-
-		for (int j = 0; j < 3; ++j) {
-			Vertex vert;
-
-			vert.position[0] = vpos[j].x;
-			vert.position[1] = vpos[j].y;
-			vert.position[2] = vpos[j].z;
-
-			vert.texcoord[0] = vtex[j].x;
-			vert.texcoord[1] = vtex[j].y;
-
-			vert.normal[0] = vnor[j].x;
-			vert.normal[1] = vnor[j].y;
-			vert.normal[2] = vnor[j].z;
-
-			vert.tangent[0] = tangent.x;
-			vert.tangent[1] = tangent.y;
-			vert.tangent[2] = tangent.z;
-
-			vert.bitangent[0] = bitangent.x;
-			vert.bitangent[1] = bitangent.y;
-			vert.bitangent[2] = bitangent.z;
-
-			vertices.push_back(vert);
-		}
-
-	}*/
-
 	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
 	glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), &(positions[0]), GL_STATIC_DRAW);
 	// 0 is the index of vertex attribute			
@@ -145,7 +71,6 @@ void InitBuffer()
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
-
 	glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
 	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &(normals[0]), GL_STATIC_DRAW);
 	// vertex normals
@@ -174,46 +99,8 @@ void InitBuffer()
 	glEnableVertexAttribArray(4);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
+	// setup VAO
 	glBindVertexArray(0);
-
-	/*
-	// vertex tangents
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (void*)offsetof(struct Vertex, texcoord));
-	glEnableVertexAttribArray(3);
-
-	// vertex bitangents
-	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(struct Vertex), (void*)offsetof(struct Vertex, tangent));
-	glEnableVertexAttribArray(4);
-	*/
-	
-	/*
-	// 1 is the index of vertex texcoord
-	glBufferData(GL_ARRAY_BUFFER, texcoords.size() * sizeof(glm::vec2), &(texcoords[0]), GL_STATIC_DRAW);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void *)0);
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
-	// 2 is the index of vertex normal
-	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &(normals[0]), GL_STATIC_DRAW);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void *)0);
-	glEnableVertexAttribArray(2);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
-	// 3 is the index of vertex tangents
-	glBufferData(GL_ARRAY_BUFFER, tangents.size() * sizeof(glm::vec3), &(tangents[0]), GL_STATIC_DRAW);
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void *)0);
-	glEnableVertexAttribArray(3);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
-	// 3 is the index of vertex bitangent
-	glBufferData(GL_ARRAY_BUFFER, bitangents.size() * sizeof(glm::vec3), &(bitangents[0]), GL_STATIC_DRAW);
-	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void *)0);
-	glEnableVertexAttribArray(4);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);*/
 }
 
 void init(void) {
@@ -278,10 +165,6 @@ void display(void)
 	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "P"), 1, GL_FALSE, &getP()[0][0]);
 
 	glUniform3f(glGetUniformLocation(shaderProgram, "lightPos"), light_pos[0], light_pos[1], light_pos[2]);
-	//glUniform3f(glGetUniformLocation(shaderProgram, "CameraPos"), eyex, eyey, eyez);
-	//glm::vec4 worldpos = M * glm::vec4(0.0);
-	//glUniform3f(glGetUniformLocation(shaderProgram, "WorldPos"), worldpos[0], worldpos[1], worldpos[2]);
-
 	glUniform1i (glGetUniformLocation(shaderProgram, "isBump"), isBump);
 	glUniform1f(glGetUniformLocation(shaderProgram, "_BumpScale"), bumpScale);
 	glUniform1f(glGetUniformLocation(shaderProgram, "frame"), realFrame);

@@ -1,10 +1,13 @@
 namespace
 {
 	char *obj_file_dir = "../Resources/Ball.obj";
+	char *main_tex_dir = "../Resources/Tile.ppm";
 	char *normal_map_dir = "../Resources/NormalMap.ppm";
+
 	GLfloat light_rad = 0.05;//radius of the light bulb
 	float eyet = 0.0;//theta in degree
 	float eyep = 90.0;//phi in degree
+
 	bool mleft = false;
 	bool mright = false;
 	bool mmiddle = false;
@@ -32,21 +35,27 @@ namespace
 	bool brx = false;
 	bool bry = false;
 	bool brz = false;
-	int isBump = 0;
+
 	int mousex = 0;
 	int mousey = 0;
-	float bumpScale = 1.0;
+	
+	
 	float eyex = 0.0;
 	float eyey = 0.0;
 	float eyez = 3.0;
+	
 	GLfloat light_pos[] = { 1, 1, 1 };
 	GLfloat ball_pos[] = { 0.0, 0.0, 0.0 };
 	GLfloat ball_rot[] = { 0.0, 0.0, 0.0 };
+	
 	const float speed = 0.01;				//camera/light/ball moving speed
 	const float rotation_speed = 0.05;		//ball rotation speed
+	
 	int frame = 0;
 	float realFrame = 0;
 	bool startBouncing = false;
+	int isBump = 0;
+	float bumpScale = 1.0;
 }
 
 void motion(int x, int y) {

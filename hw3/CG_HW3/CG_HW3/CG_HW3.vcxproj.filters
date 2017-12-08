@@ -59,13 +59,7 @@
     <ClInclude Include="glm_helper.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
-    <ClInclude Include="..\shader_lib\shader.h">
-      <Filter>標頭檔</Filter>
-    </ClInclude>
     <ClInclude Include="Shader.hpp">
-      <Filter>標頭檔</Filter>
-    </ClInclude>
-    <ClInclude Include="Texture.hpp">
       <Filter>標頭檔</Filter>
     </ClInclude>
     <ClInclude Include="Model.hpp">

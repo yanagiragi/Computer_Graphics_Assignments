@@ -129,14 +129,12 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\shader_lib\shader.h" />
     <ClInclude Include="glm\glm.h" />
     <ClInclude Include="glm\glmint.h" />
     <ClInclude Include="glm_helper.h" />
     <ClInclude Include="Input.hpp" />
     <ClInclude Include="Model.hpp" />
     <ClInclude Include="Shader.hpp" />
-    <ClInclude Include="Texture.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
