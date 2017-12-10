@@ -56,6 +56,7 @@ namespace
 	bool startBouncing = false;
 	int isBump = 0;
 	float bumpScale = 1.0;
+	float _PixelSize = 0.001;
 }
 
 void motion(int x, int y) {
@@ -345,7 +346,20 @@ void keyboardup(unsigned char key, int x, int y) {
 			realFrame = 0.0;
 			break;
 		}
-
+		case '.':
+		{
+			_PixelSize += 0.001f;
+			break;
+		}
+		case '/':
+		{
+			_PixelSize -= 0.001f;
+			if (_PixelSize <= 0)
+			{
+				_PixelSize = 0.001f;
+			}
+			break;
+		}
 		default:
 		{
 			break;
@@ -518,6 +532,9 @@ void keyboard(unsigned char key, int x, int y) {
 			eyez = 3;
 			eyet = 0;
 			eyep = 90;
+			startBouncing = false;
+			_PixelSize = 0.0001;
+			bumpScale = 1.0;
 			break;
 		}
 		default:

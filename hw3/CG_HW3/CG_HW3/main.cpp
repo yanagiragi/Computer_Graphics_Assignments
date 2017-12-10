@@ -56,28 +56,24 @@ void InitTexture()
 	normalTextureID = load_normal_map(normal_map_dir);
 }
 
-
-void InitBuffer()
+void BindBuffer()
 {
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(5, VBO);
-
 	glBindVertexArray(VAO);
-	
+
 	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
 	glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), &(positions[0]), GL_STATIC_DRAW);
 	// 0 is the index of vertex attribute			
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void *)0);
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	
+
 	glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
 	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &(normals[0]), GL_STATIC_DRAW);
 	// vertex normals
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
 	glEnableVertexAttribArray(1);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	
+
 	glBindBuffer(GL_ARRAY_BUFFER, VBO[2]);
 	glBufferData(GL_ARRAY_BUFFER, texcoords.size() * sizeof(glm::vec2), &(texcoords[0]), GL_STATIC_DRAW);
 	// vertex UVs
@@ -98,9 +94,17 @@ void InitBuffer()
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
 	glEnableVertexAttribArray(4);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	
+
 	// setup VAO
 	glBindVertexArray(0);
+}
+
+void InitBuffer()
+{
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(5, VBO);
+
+	BindBuffer();
 }
 
 void init(void) {
@@ -133,10 +137,126 @@ glm::mat4 getP()
 	return glm::perspective(glm::radians(fov), aspect, nearDistance, farDistance);
 }
 
+GLuint FramebufferName = 0;
+GLuint renderedTexture;
+
+GLuint quad_VertexArrayID;
+GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+GLuint quad_vertexbuffer;
+GLuint FrameVertexShader, FrameFragmentShader;
+GLuint FrameShaderProgram;
+
+static const GLfloat g_quad_vertex_buffer_data[] = {
+	-1.0f, -1.0f, 0.0f,
+	1.0f, -1.0f, 0.0f,
+	-1.0f,  1.0f, 0.0f,
+	-1.0f,  1.0f, 0.0f,
+	1.0f, -1.0f, 0.0f,
+	1.0f,  1.0f, 0.0f,
+};
+
+void display();
+
+void initSecond()
+{
+	glGenFramebuffers(1, &FramebufferName);
+	glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+
+	// The texture we're going to render to
+	glGenTextures(1, &renderedTexture);
+
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D, renderedTexture);
+
+	// Give an empty image to OpenGL ( the last "0" )
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+
+	// Poor filtering. Needed !
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	// Set "renderedTexture" as our colour attachement #0
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
+
+	// Set the list of draw buffers.
+	glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "Error With Init Frame Buffer" << std::endl;
+
+	// The fullscreen quad's FBO
+	glGenVertexArrays(1, &quad_VertexArrayID);
+	glGenBuffers(1, &quad_vertexbuffer);
+
+	// Create and compile our GLSL program from the shaders
+	const char* vertexShaderSource = ReadShader("../Resources/FrameVert.glsl");
+	const char* fragmentShaderSource = ReadShader("../Resources/FrameFrag.glsl");
+	CreateShader(FrameVertexShader, GL_VERTEX_SHADER, vertexShaderSource);
+	CreateShader(FrameFragmentShader, GL_FRAGMENT_SHADER, fragmentShaderSource);
+	CreateProgram(FrameShaderProgram, 2, FrameVertexShader, FrameFragmentShader);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void displaySecond(void)
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+	glViewport(0, 0, 512, 512); // Render on the whole framebuffer, complete from the lower left corner to the upper right
+
+	display();
+	
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+	glDisableVertexAttribArray(3);
+	glDisableVertexAttribArray(4);
+
+	// Render to the screen
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, 512, 512); // Render on the whole framebuffer, complete from the lower left corner to the upper right
+								
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);// Clear the screen
+	
+	// Bind our texture in Texture Unit 0
+	glActiveTexture(GL_TEXTURE0 + 0);
+	glBindTexture(GL_TEXTURE_2D, renderedTexture);
+	
+	glUseProgram(FrameShaderProgram);
+
+	// Set our "renderedTexture" sampler to use Texture Unit 0
+	glUniform1i(glGetUniformLocation(FrameShaderProgram, "renderedTexture"), 0);
+	glUniform1f(glGetUniformLocation(FrameShaderProgram, "_PixelSize"), _PixelSize);
+
+	// Bind VAO
+	glBindVertexArray(quad_VertexArrayID);
+	// Bind VBO
+	glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
+	// Setup VBO
+	glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_vertex_buffer_data), g_quad_vertex_buffer_data, GL_STATIC_DRAW);
+	// setup VAO
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
+	glVertexAttribPointer(
+		0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+		3,                  // size
+		GL_FLOAT,           // type
+		GL_FALSE,           // normalized?
+		0,                  // stride
+		(void*)0            // array buffer offset
+	);
+
+	// Draw the triangles !
+	glDrawArrays(GL_TRIANGLES, 0, 6); // 2*3 indices starting at 0 -> 2 triangles
+
+	glutSwapBuffers();
+}
+
 void display(void)
 {
 	++frame;
 
+	BindBuffer();
+	
 	if (startBouncing)
 	{
 		realFrame += 0.05;
@@ -181,7 +301,7 @@ void display(void)
 	glBindVertexArray(VAO);
 	glDrawArrays(GL_TRIANGLES, 0, model->numtriangles * 3);
 
-	glutSwapBuffers();
+	//glutSwapBuffers();
 	camera_light_ball_move();
 }
 
@@ -212,9 +332,10 @@ int main(int argc, char *argv[])
 	glewInit();
 
 	init();
+	initSecond();
 
 	glutReshapeFunc(reshape);
-	glutDisplayFunc(display);
+	glutDisplayFunc(displaySecond);
 	glutIdleFunc(idle);
 	glutKeyboardFunc(keyboard);
 	glutKeyboardUpFunc(keyboardup);
