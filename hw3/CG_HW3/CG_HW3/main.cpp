@@ -20,8 +20,8 @@
 #include <stddef.h> /*for function: offsetof */
 #include <math.h>
 #include <string.h>
-#include "../GL/glew.h"
-#include "../GL/glut.h"
+#include "GL/glew.h"
+#include "GL/glut.h"
 #include "glm/glm.h"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -57,8 +57,8 @@ void display();
 
 void InitShader()
 {
-	char *vertexShaderSource = ReadShader("../Resources/vertex.glsl");
-	char *fragmentShaderSource = ReadShader("../Resources/fragment.glsl");
+	char *vertexShaderSource = ReadShader("Resources/vertex.glsl");
+	char *fragmentShaderSource = ReadShader("Resources/fragment.glsl");
 	CreateShader(vertexShader, GL_VERTEX_SHADER, vertexShaderSource);
 	CreateShader(fragmentShader, GL_FRAGMENT_SHADER, fragmentShaderSource);
 	CreateProgram(shaderProgram, 2, vertexShader, fragmentShader);
@@ -75,11 +75,11 @@ void InitTexture()
 
 	normalTextureID = load_normal_map(normal_map_dir);
 
-	NoiseTexID = load_normal_map("../Resources/noisetexture.ppm");
+	NoiseTexID = load_normal_map("Resources/noisetexture.ppm");
 
-	LineTexID = load_normal_map("../Resources/linetexture.ppm");
+	LineTexID = load_normal_map("Resources/linetexture.ppm");
 
-	VignetteTexID = load_normal_map("../Resources/vignettetexture.ppm");
+	VignetteTexID = load_normal_map("Resources/vignettetexture.ppm");
 
 
 }
@@ -197,8 +197,8 @@ void initSecond()
 	glGenBuffers(1, &quad_vertexbuffer);
 
 	// Create and compile our GLSL program from the shaders
-	const char* vertexShaderSource = ReadShader("../Resources/FrameVert.glsl");
-	const char* fragmentShaderSource = ReadShader("../Resources/FrameFrag.glsl");
+	const char* vertexShaderSource = ReadShader("Resources/FrameVert.glsl");
+	const char* fragmentShaderSource = ReadShader("Resources/FrameFrag.glsl");
 	CreateShader(FrameVertexShader, GL_VERTEX_SHADER, vertexShaderSource);
 	CreateShader(FrameFragmentShader, GL_FRAGMENT_SHADER, fragmentShaderSource);
 	CreateProgram(FrameShaderProgram, 2, FrameVertexShader, FrameFragmentShader);

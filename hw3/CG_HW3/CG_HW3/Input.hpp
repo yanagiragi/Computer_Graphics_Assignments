@@ -1,8 +1,8 @@
 namespace
 {
-	char *obj_file_dir = "../Resources/Ball.obj";
-	char *main_tex_dir = "../Resources/Tile.ppm";
-	char *normal_map_dir = "../Resources/NormalMap.ppm";
+	char *obj_file_dir = "Resources/Ball.obj";
+	char *main_tex_dir = "Resources/Tile.ppm";
+	char *normal_map_dir = "Resources/NormalMap.ppm";
 
 	GLfloat light_rad = 0.05;//radius of the light bulb
 	float eyet = 0.0;//theta in degree
