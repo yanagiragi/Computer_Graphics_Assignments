@@ -53,10 +53,10 @@ namespace
 	
 	int frame = 0;
 	float realFrame = 0;
-	bool startBouncing = false;
+	int startBouncing = 0;
 	int isBump = 0;
 	float bumpScale = 1.0;
-	float _PixelSize = 0.001;
+	float _PixelSize = 0.01;
 }
 
 void motion(int x, int y) {
@@ -342,7 +342,8 @@ void keyboardup(unsigned char key, int x, int y) {
 		}
 		case 'n':
 		{
-			startBouncing = !startBouncing;
+			startBouncing = (startBouncing + 1) % 4;
+			std::cout << "mode = " << startBouncing << std::endl;
 			realFrame = 0.0;
 			break;
 		}

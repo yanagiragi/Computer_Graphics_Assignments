@@ -33,7 +33,27 @@
 #include "Input.hpp"
 
 GLuint TextureID, normalTextureID;
+GLuint NoiseTexID, LineTexID, VignetteTexID;
 GLfloat normalWid, normalHei;
+GLuint FramebufferName = 0;
+GLuint renderedTexture;
+
+GLuint quad_VertexArrayID;
+GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+GLuint quad_vertexbuffer;
+GLuint FrameVertexShader, FrameFragmentShader;
+GLuint FrameShaderProgram;
+
+static const GLfloat g_quad_vertex_buffer_data[] = {
+	-1.0f, -1.0f, 0.0f,
+	1.0f, -1.0f, 0.0f,
+	-1.0f,  1.0f, 0.0f,
+	-1.0f,  1.0f, 0.0f,
+	1.0f, -1.0f, 0.0f,
+	1.0f,  1.0f, 0.0f,
+};
+
+void display();
 
 void InitShader()
 {
@@ -54,6 +74,14 @@ void InitTexture()
 	TextureID = load_normal_map(main_tex_dir);
 
 	normalTextureID = load_normal_map(normal_map_dir);
+
+	NoiseTexID = load_normal_map("../Resources/noisetexture.ppm");
+
+	LineTexID = load_normal_map("../Resources/linetexture.ppm");
+
+	VignetteTexID = load_normal_map("../Resources/vignettetexture.ppm");
+
+
 }
 
 void BindBuffer()
@@ -137,26 +165,6 @@ glm::mat4 getP()
 	return glm::perspective(glm::radians(fov), aspect, nearDistance, farDistance);
 }
 
-GLuint FramebufferName = 0;
-GLuint renderedTexture;
-
-GLuint quad_VertexArrayID;
-GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
-GLuint quad_vertexbuffer;
-GLuint FrameVertexShader, FrameFragmentShader;
-GLuint FrameShaderProgram;
-
-static const GLfloat g_quad_vertex_buffer_data[] = {
-	-1.0f, -1.0f, 0.0f,
-	1.0f, -1.0f, 0.0f,
-	-1.0f,  1.0f, 0.0f,
-	-1.0f,  1.0f, 0.0f,
-	1.0f, -1.0f, 0.0f,
-	1.0f,  1.0f, 0.0f,
-};
-
-void display();
-
 void initSecond()
 {
 	glGenFramebuffers(1, &FramebufferName);
@@ -220,12 +228,26 @@ void displaySecond(void)
 	// Bind our texture in Texture Unit 0
 	glActiveTexture(GL_TEXTURE0 + 0);
 	glBindTexture(GL_TEXTURE_2D, renderedTexture);
+
+	glActiveTexture(GL_TEXTURE0 + 1);
+	glBindTexture(GL_TEXTURE_2D, NoiseTexID);
+
+	glActiveTexture(GL_TEXTURE0 + 2);
+	glBindTexture(GL_TEXTURE_2D, LineTexID);
+
+	glActiveTexture(GL_TEXTURE0 + 3);
+	glBindTexture(GL_TEXTURE_2D, VignetteTexID);
 	
 	glUseProgram(FrameShaderProgram);
 
 	// Set our "renderedTexture" sampler to use Texture Unit 0
 	glUniform1i(glGetUniformLocation(FrameShaderProgram, "renderedTexture"), 0);
+	glUniform1i(glGetUniformLocation(FrameShaderProgram, "_NoiseTex"), 1);
+	glUniform1i(glGetUniformLocation(FrameShaderProgram, "_LineTex"), 2);
+	glUniform1i(glGetUniformLocation(FrameShaderProgram, "_VignetteTex"), 3);
 	glUniform1f(glGetUniformLocation(FrameShaderProgram, "_PixelSize"), _PixelSize);
+	glUniform1i(glGetUniformLocation(FrameShaderProgram, "_Time"), (int)frame / 2);
+	glUniform1i(glGetUniformLocation(FrameShaderProgram, "mode"), (int)startBouncing);
 
 	// Bind VAO
 	glBindVertexArray(quad_VertexArrayID);
@@ -257,7 +279,7 @@ void display(void)
 
 	BindBuffer();
 	
-	if (startBouncing)
+	if (startBouncing == 1)
 	{
 		realFrame += 0.05;
 	}
