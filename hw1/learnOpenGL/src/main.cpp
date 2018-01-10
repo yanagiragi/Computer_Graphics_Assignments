@@ -3,8 +3,8 @@
 *	Author: yanagiragi
 *	Course: NCTU Computer Graphics
 */
-#include <GL/glew.h>
-#include <GL/glut.h>
+#include "glew.h"
+#include "glut.h"
 #include <GL/glu.h>
 #include <GL/gl.h>
 

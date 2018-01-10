@@ -114,12 +114,8 @@ void DrawPlanet(int index);
 void DrawSatellite(int index);
 void DrawCube();
 void Display(void);
-void ParseObj();
-void DrawObj_Alter();
 void Destroy();
 void keyboard(unsigned char key, int x, int y);
-bool CreateProgram(unsigned int &shaderProgramInstance, int n_args, ...);
-bool CreateShader(unsigned int &shaderInstance, unsigned int shaderType, const GLchar* shaderSource);
 
 #pragma endregion
 
@@ -140,36 +136,32 @@ void DrawObj() {
 	glTranslatef(0.0f, 0.0f, 0.0f);
 	glRotatef(planets[MYSTAR_INDEX].RotateSelfAngle * (float)(frame), planets[MYSTAR_INDEX].RotateSelfAxis.x, planets[MYSTAR_INDEX].RotateSelfAxis.y, planets[MYSTAR_INDEX].RotateSelfAxis.z);
 
-	if (flag) {
-		DrawObj_Alter();
-	}
-	else {
-		//glDisable(GL_LIGHTING);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, planets[MYSTAR_INDEX].Texture2D);
-		glEnable(GL_LIGHTING);
-		glCullFace(GL_BACK);
-		glEnable(GL_CULL_FACE);
+
+	//glDisable(GL_LIGHTING);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, planets[MYSTAR_INDEX].Texture2D);
+	glEnable(GL_LIGHTING);
+	glCullFace(GL_BACK);
+	glEnable(GL_CULL_FACE);
 		
 
-		for (int i = 0; i < 2464; ++i) {
-			glBegin(GL_TRIANGLES);
-			Vector3 v1 = teapot.positions[(int)(teapot.faces[i].x) - 1];
-			Vector3 v2 = teapot.positions[(int)(teapot.faces[i].y) - 1];
-			Vector3 v3 = teapot.positions[(int)(teapot.faces[i].z) - 1];
-			glm::vec3 normal = glm::normalize(glm::cross(glm::vec3(v2.x, v2.y, v2.z) - glm::vec3(v1.x, v1.y, v1.z), glm::vec3(v3.x, v3.y, v3.z) - glm::vec3(v1.x, v1.y, v1.z)));
-			glNormal3f(normal.x, normal.y, normal.z);
-			glTexCoord2f(v1.x, v1.y);
-			glVertex3f(v1.x, v1.y, v1.z);
-			glTexCoord2f(v2.x, v2.y);
-			glVertex3f(v2.x, v2.y, v2.z);
-			glTexCoord2f(v3.x, v3.y);
-			glVertex3f(v3.x, v3.y, v3.z);
-			glEnd();
-		}
-		glDisable(GL_CULL_FACE);
-		//glDisable(GL_TEXTURE_2D);
+	for (int i = 0; i < 2464; ++i) {
+		glBegin(GL_TRIANGLES);
+		Vector3 v1 = teapot.positions[(int)(teapot.faces[i].x) - 1];
+		Vector3 v2 = teapot.positions[(int)(teapot.faces[i].y) - 1];
+		Vector3 v3 = teapot.positions[(int)(teapot.faces[i].z) - 1];
+		glm::vec3 normal = glm::normalize(glm::cross(glm::vec3(v2.x, v2.y, v2.z) - glm::vec3(v1.x, v1.y, v1.z), glm::vec3(v3.x, v3.y, v3.z) - glm::vec3(v1.x, v1.y, v1.z)));
+		glNormal3f(normal.x, normal.y, normal.z);
+		glTexCoord2f(v1.x, v1.y);
+		glVertex3f(v1.x, v1.y, v1.z);
+		glTexCoord2f(v2.x, v2.y);
+		glVertex3f(v2.x, v2.y, v2.z);
+		glTexCoord2f(v3.x, v3.y);
+		glVertex3f(v3.x, v3.y, v3.z);
+		glEnd();
 	}
+	glDisable(GL_CULL_FACE);
+	//glDisable(GL_TEXTURE_2D);	
 	
 	glPopMatrix();
 }
@@ -588,7 +580,6 @@ void Init()
 
 	loadObj("../Resource/teapot.obj");
 	
-	ParseObj();
 }
 
 void CreateSatelitte() {
@@ -1069,190 +1060,8 @@ void keyboard(unsigned char key, int x, int y)
 	glutPostRedisplay(); // this redraws the scene without waiting for the display callback so that any changes appear instantly 
 }
 
-void DrawObj_Alter()
-{
-	float time = frame;
-	float greenValue = (sin(time) / 2.0f) + 0.5f;
-	int vertexColorLocationM = glGetUniformLocation(shaderProgram, "matrixM");
-	int vertexColorLocationV = glGetUniformLocation(shaderProgram, "matrixV");
-	int vertexColorLocationP = glGetUniformLocation(shaderProgram, "matrixP");
-
-	GLfloat matrixM[16];
-	GLfloat matrixV[16];
-	GLfloat matrixP[16];
-	glGetFloatv(GL_PROJECTION_MATRIX, matrixP);
-
-	glm::mat4 mat;
-
-	glPushMatrix();
-	//glGetFloatv(GL_MODELVIEW_MATRIX, matrixMV);
-	
-	//glTranslatef(2.7357f, -7.51639f, 20.13f);
-	//glGetFloatv(GL_MODELVIEW_MATRIX, matrixMV);
-
-	glLoadIdentity();
-	//gluLookAt(0.0, 0, 20, 0, 0, 0, 0, 1, 0);			// set the view part of modelview matrix
-
-	
-	//glRotatef(planets[MYSTAR_INDEX].RotateRespectAxisRotateAngle, 0.0f, 0.0f, 1.0f);
-	//glRotatef(planets[MYSTAR_INDEX].RotateRespectAngle * (float)(frame), planets[MYSTAR_INDEX].RotateRespectAxis.x, planets[MYSTAR_INDEX].RotateRespectAxis.y, planets[MYSTAR_INDEX].RotateRespectAxis.z);
-	//glTranslatef(planets[MYSTAR_INDEX].Translation, 0.0f, 0.0f);
-	//glTranslatef(0.3f, 0.0f, 0.0f);
-	//glTranslatef(0.0f, 0.0f, 0.4f);
-
-	glScalef(0.5f, 0.5f, 0.5f);
-	//glRotatef(1.0f * frame, 0.0f, 1.0f, 0.0f);
-
-	glGetFloatv(GL_MODELVIEW_MATRIX, matrixM);
-
-	//glTranslatef(0.0f, 0.0f, 0.0f);
-
-	//gluSphere(quad, 2.0f, 20, 5);
-	glLoadIdentity();
-	//glLoadIdentity();
-	//gluLookAt(0.0, 0, 20, 0, 0, 0, 0, 1, 0);			// set the view part of modelview matrix
-	//glGetFloatv(GL_MODELVIEW_MATRIX, matrixV);
-
-	
-	gluPerspective(60.0f * 3.14 / 180.0, 4.0f / 3.0f, 5.0f, 100.0f);
-	//GLfloat matrixP[16];
-	glGetFloatv(GL_PROJECTION_MATRIX, matrixP);
-
-	//glMultMatrixf(matrixP);
-	//glGetFloatv(GL_MODELVIEW_MATRIX, matrixMV);
-
-	glUseProgram(shaderProgram);
-	//glUniform4fv(vertexColorLocation, 0, matrix);
-	glUniformMatrix4fv(vertexColorLocationM, 1, GL_FALSE, matrixM);
-	glUniformMatrix4fv(vertexColorLocationV, 1, GL_FALSE, matrixV);
-	glUniformMatrix4fv(vertexColorLocationP, 1, GL_FALSE, matrixP);
-
-	glBindVertexArray(VAO);
-	glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
-
-	glPopMatrix();
-	glUseProgram(0);
-}
-
-bool CreateShader(unsigned int &shaderInstance, unsigned int shaderType, const GLchar* shaderSource) {
-
-	shaderInstance = glCreateShader(shaderType);
-
-	// 1 stands for one string in vertexShaderSource
-	glShaderSource(shaderInstance, 1, &shaderSource, NULL);
-	glCompileShader(shaderInstance);
-
-	glGetShaderiv(shaderInstance, GL_COMPILE_STATUS, &success);
-
-	if (!success) {
-		glGetShaderInfoLog(shaderInstance, ERROR_MESSAGE_LOG_SIZE, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-	return success;
-}
-
-bool CreateProgram(unsigned int &shaderProgramInstance, int n_args, ...)
-{
-	shaderProgramInstance = glCreateProgram();
-
-	va_list ap;
-	va_start(ap, n_args);
-	for (int i = 0; i < n_args; i++) {
-		int shaderID = va_arg(ap, unsigned int);
-		glAttachShader(shaderProgramInstance, shaderID);
-	}
-	va_end(ap);
-
-	glLinkProgram(shaderProgramInstance);
-
-	glGetProgramiv(shaderProgramInstance, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgramInstance, ERROR_MESSAGE_LOG_SIZE, NULL, infoLog);
-		std::cout << "ERROR::SHADER::LINK_FAILED\n" << infoLog << std::endl;
-	}
-	else {
-		va_start(ap, n_args);
-		for (int i = 0; i < n_args; i++) {
-			int shaderID = va_arg(ap, unsigned int);
-			glDeleteShader(shaderID);
-		}
-		va_end(ap);
-	}
-
-	return success;
-}
-
 void Destroy() {
-	free(vertexShaderSource);
-	free(fragmentShaderSource);
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
-}
-
-void ParseObj() {
-
-	for (int i = 0; i < UTAH_VERTEX_COUNT; ++i) {
-		vertices[i * 3 + 0] = teapot.positions[i].x;
-		vertices[i * 3 + 1] = teapot.positions[i].y;
-		vertices[i * 3 + 2] = teapot.positions[i].z;
-	}
-
-	for (int i = 0; i < UTAH_FACE_COUNT; ++i) {
-		indices[i * 3 + 0] = teapot.faces[i].x - 1;
-		indices[i * 3 + 1] = teapot.faces[i].y - 1;
-		indices[i * 3 + 2] = teapot.faces[i].z - 1;
-	}
-
-	vertexShaderSource = (char *) malloc(sizeof(char) * MAX_STRING_LENGTH);
-	vertexShaderSource[0] = '\0';
-	fragmentShaderSource = (char *)malloc(sizeof(char) * MAX_STRING_LENGTH);
-	fragmentShaderSource[0] = '\0';
-
-	char *buf = (char *)malloc(sizeof(char) * MAX_STRING_LENGTH);
-	FILE* fp = fopen("../learnOpenGL/glsl/vertex.glsl", "r");
-	while (fgets(buf, MAX_STRING_LENGTH, fp) != NULL)
-	{
-		strcat(vertexShaderSource, buf);
-	}
-	fclose(fp);
-
-	fp = fopen("../learnOpenGL/glsl/fragment.glsl", "r");
-	while (fgets(buf, MAX_STRING_LENGTH, fp) != NULL)
-	{
-		strcat(fragmentShaderSource, buf);
-	}
-	fclose(fp);
-
-	free(buf);
-	
-	CreateShader(vertexShader, GL_VERTEX_SHADER, vertexShaderSource);
-	CreateShader(fragmentShader, GL_FRAGMENT_SHADER, fragmentShaderSource);
-
-	CreateProgram(shaderProgram, 2, vertexShader, fragmentShader);
-
-	// VAO = vertex attribute object, 1 stands for one buffer
-	glGenVertexArrays(1, &VAO);
-	// VBO = vertex buffer object
-	glGenBuffers(1, &VBO);
-	// EBO = element buffer object
-	glGenBuffers(1, &EBO);
-
-	glBindVertexArray(VAO);
-	// vertex buffer type: GL_ARRAY_BUFFER
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-
-	// copy vertex data into buffer's memory
-	// GL_STATIC_DRAW: the data will most likely not change at all or very rarely.
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
-	// 0 is the index of vertex attribute
-	glEnableVertexAttribArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
 }
