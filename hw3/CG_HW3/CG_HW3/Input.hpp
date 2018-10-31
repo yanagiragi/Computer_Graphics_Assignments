@@ -48,7 +48,7 @@ namespace
 	GLfloat ball_pos[] = { 0.0, 0.0, 0.0 };
 	GLfloat ball_rot[] = { 0.0, 0.0, 0.0 };
 	
-	const float speed = 0.01;				//camera/light/ball moving speed
+	const float speed = 0.1;				//camera/light/ball moving speed
 	const float rotation_speed = 0.05;		//ball rotation speed
 	
 	int frame = 0;

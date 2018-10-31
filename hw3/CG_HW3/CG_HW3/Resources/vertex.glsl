@@ -51,9 +51,9 @@ void main()
 		vec3 MV_bump = mat3(transpose(inverse(V * M))) * bump.xyz;
 
 		vec4 Position = vec4(inverse(P * V * M) * vec4(gl_Position.xyz, 1.0));
-		Position = vec4(Position.xyz + MV_bump.xyz, 1.0);
+		Position = vec4(Position.xyz + MV_bump.xyz * 50.0, 1.0);
 		Position = P * V * M * Position;
 
-		gl_Position = ((sin(time) + 1.0) / 2.0) * Position + (1 - ((sin(time) + 1.0) / 2.0)) * gl_Position;
+		gl_Position = ((sin(time) + 1.0) / 128.0) * Position + (1 - ((sin(time) + 1.0) / 128.0)) * gl_Position;
 	}
 }

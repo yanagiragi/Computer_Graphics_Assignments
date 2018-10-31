@@ -36,6 +36,7 @@ GLuint TextureID, normalTextureID;
 GLuint NoiseTexID, LineTexID, VignetteTexID;
 GLfloat normalWid, normalHei;
 GLuint FramebufferName = 0;
+GLuint depthrenderbuffer = 0;
 GLuint renderedTexture;
 
 GLuint quad_VertexArrayID;
@@ -43,6 +44,8 @@ GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
 GLuint quad_vertexbuffer;
 GLuint FrameVertexShader, FrameFragmentShader;
 GLuint FrameShaderProgram;
+
+int g_width = 512, g_height = 512;
 
 static const GLfloat g_quad_vertex_buffer_data[] = {
 	-1.0f, -1.0f, 0.0f,
@@ -80,7 +83,6 @@ void InitTexture()
 	LineTexID = load_normal_map("Resources/linetexture.ppm");
 
 	VignetteTexID = load_normal_map("Resources/vignettetexture.ppm");
-
 
 }
 
@@ -159,8 +161,8 @@ glm::mat4 getV()
 glm::mat4 getP()
 {
 	float fov = 45.0f;
-	float aspect = 1.0 / 1.0f; // since window is (512, 512)
-	float nearDistance = 0.1f;
+	float aspect = g_width / g_height; // since window is (512, 512)
+	float nearDistance = 0.001f;
 	float farDistance = 1000.0f;
 	return glm::perspective(glm::radians(fov), aspect, nearDistance, farDistance);
 }
@@ -182,6 +184,12 @@ void initSecond()
 	// Poor filtering. Needed !
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	// Setup depth buffer for depth test
+	glGenRenderbuffers(1, &depthrenderbuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 512, 512);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
 
 	// Set "renderedTexture" as our colour attachement #0
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
@@ -209,7 +217,7 @@ void initSecond()
 void displaySecond(void)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-	glViewport(0, 0, 512, 512); // Render on the whole framebuffer, complete from the lower left corner to the upper right
+	glViewport(0, 0, g_width, g_height); // Render on the whole framebuffer, complete from the lower left corner to the upper right
 
 	display();
 	
@@ -221,7 +229,7 @@ void displaySecond(void)
 
 	// Render to the screen
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glViewport(0, 0, 512, 512); // Render on the whole framebuffer, complete from the lower left corner to the upper right
+	glViewport(0, 0, g_width, g_height); // Render on the whole framebuffer, complete from the lower left corner to the upper right
 								
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);// Clear the screen
 	
@@ -273,27 +281,8 @@ void displaySecond(void)
 	glutSwapBuffers();
 }
 
-void display(void)
+void RenderBall()
 {
-	++frame;
-
-	BindBuffer();
-	
-	if (startBouncing == 1)
-	{
-		realFrame += 0.05;
-	}
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
-	glPushMatrix();
-		glUseProgram(0);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		gluLookAt(eyex, eyey, eyez,eyex+cos(eyet*M_PI/180)*cos(eyep*M_PI / 180), eyey+sin(eyet*M_PI / 180), eyez-cos(eyet*M_PI / 180)*sin(eyep*M_PI / 180),0.0, 1.0, 0.0);
-		draw_light_bulb();
-	glPopMatrix();
-
 	glUseProgram(shaderProgram);
 
 	glm::mat4 M(1.0f);
@@ -307,23 +296,49 @@ void display(void)
 	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "P"), 1, GL_FALSE, &getP()[0][0]);
 
 	glUniform3f(glGetUniformLocation(shaderProgram, "lightPos"), light_pos[0], light_pos[1], light_pos[2]);
-	glUniform1i (glGetUniformLocation(shaderProgram, "isBump"), isBump);
+	glUniform1i(glGetUniformLocation(shaderProgram, "isBump"), isBump);
 	glUniform1f(glGetUniformLocation(shaderProgram, "_BumpScale"), bumpScale);
 	glUniform1f(glGetUniformLocation(shaderProgram, "frame"), realFrame);
 	glUniform1i(glGetUniformLocation(shaderProgram, "bouncing"), (int)startBouncing);
 
 	glActiveTexture(GL_TEXTURE0 + 0);
-	glBindTexture(GL_TEXTURE_2D, TextureID);	
+	glBindTexture(GL_TEXTURE_2D, TextureID);
 	glUniform1i(glGetUniformLocation(shaderProgram, "mainTex"), 0);
 
 	glActiveTexture(GL_TEXTURE0 + 1);
 	glBindTexture(GL_TEXTURE_2D, normalTextureID);
 	glUniform1i(glGetUniformLocation(shaderProgram, "bumpTex"), 1);
-	
+
 	glBindVertexArray(VAO);
 	glDrawArrays(GL_TRIANGLES, 0, model->numtriangles * 3);
+}
 
-	//glutSwapBuffers();
+void display(void)
+{
+	++frame;
+
+	BindBuffer();
+	
+	if (startBouncing == 1)
+	{
+		realFrame += 0.05;
+	}
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+
+	glPushMatrix();
+		glUseProgram(0);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		gluLookAt(eyex, eyey, eyez,eyex+cos(eyet*M_PI/180)*cos(eyep*M_PI / 180), eyey+sin(eyet*M_PI / 180), eyez-cos(eyet*M_PI / 180)*sin(eyep*M_PI / 180),0.0, 1.0, 0.0);
+		draw_light_bulb();
+	glPopMatrix();
+
+	RenderBall();
+
+	// glutSwapBuffers();
 	camera_light_ball_move();
 }
 
@@ -333,7 +348,9 @@ void reshape(int width, int height)
 	glViewport(0, 0, width, height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(45.0f, (GLfloat)width / (GLfloat)height, 0.001f, 100.0f);
+	gluPerspective(45.0f, (GLfloat)width / (GLfloat)height, 0.001f, 1000.0f);
+	g_width = width;
+	g_height = height;
 	glMatrixMode(GL_MODELVIEW);
 }
 
@@ -349,7 +366,7 @@ int main(int argc, char *argv[])
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 	//remember to replace "YourStudentID" with your own student ID
 	glutCreateWindow("CG_HW3_0556652");
-	glutReshapeWindow(512, 512);
+	glutReshapeWindow(g_width, g_height);
 
 	glewInit();
 
